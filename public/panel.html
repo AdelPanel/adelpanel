@@ -69,7 +69,7 @@
     display: grid; place-items: center;
     flex-shrink: 0;
   }
-  .logo-icon svg { width: 18px; height: 18px; color: #000; }
+  .logo-icon svg { height: 18px; color: #000; }
   .logo-name { font-size: 15px; font-weight: 800; color: var(--text); }
   .logo-tag { font-family: 'Courier New', Courier, monospace; font-size: 9px; color: var(--muted); margin-top: 2px; }
   .logo-icon img, .auth-logo-icon img {
@@ -77,6 +77,9 @@
       background-color: var(--surface);
       border-radius: 5px;
   }
+    .logo-icon img {
+        width: 50px;
+    }
   .nav { padding: 14px 12px; flex: 1; overflow-y: auto; }
   .nav-section { margin-bottom: 22px; }
   .nav-label {
