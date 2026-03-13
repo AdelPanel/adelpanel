@@ -398,7 +398,7 @@ if [ -f "${SCRIPT_DIR}/public/panel.html" ] && [ -f "${SCRIPT_DIR}/core/Auth.php
     info "Найдены локальные файлы в ${SCRIPT_DIR} — используем их"
     mkdir -p "$PANEL_DIR"
     # Копируем всё кроме самого install.sh чтобы не затереть случайно
-    rsync -a --exclude='*.log' "${SCRIPT_DIR}/" "${PANEL_DIR}/" 2>/dev/null \
+    rsync -a --exclude='*.log' --exclude='.git' "${SCRIPT_DIR}/" "${PANEL_DIR}/" 2>/dev/null \
         || cp -r "${SCRIPT_DIR}/." "${PANEL_DIR}/"
     LOCAL_INSTALL=1
     ok "Локальные файлы скопированы в ${PANEL_DIR}"
