@@ -1,0 +1,22 @@
+# AdelPanel sudoers — /etc/sudoers.d/adelpanel
+Defaults:adelpanel !requiretty
+
+adelpanel ALL=(root) NOPASSWD: /usr/sbin/ufw
+adelpanel ALL=(root) NOPASSWD: /usr/sbin/ufw *
+adelpanel ALL=(root) NOPASSWD: /bin/bash /opt/adelpanel/scripts/*.sh
+adelpanel ALL=(root) NOPASSWD: /sbin/shutdown
+adelpanel ALL=(root) NOPASSWD: /sbin/shutdown *
+adelpanel ALL=(root) NOPASSWD: /bin/systemctl restart nginx
+adelpanel ALL=(root) NOPASSWD: /bin/systemctl reload nginx
+adelpanel ALL=(root) NOPASSWD: /bin/systemctl restart mysql
+adelpanel ALL=(root) NOPASSWD: /bin/systemctl reload mysql
+adelpanel ALL=(root) NOPASSWD: /bin/systemctl restart pure-ftpd
+adelpanel ALL=(root) NOPASSWD: /bin/systemctl reload pure-ftpd
+adelpanel ALL=(root) NOPASSWD: /bin/systemctl restart php*-fpm
+adelpanel ALL=(root) NOPASSWD: /usr/bin/systemctl restart nginx
+adelpanel ALL=(root) NOPASSWD: /usr/bin/systemctl reload nginx
+adelpanel ALL=(root) NOPASSWD: /usr/bin/systemctl restart mysql
+adelpanel ALL=(root) NOPASSWD: /usr/bin/systemctl reload mysql
+adelpanel ALL=(root) NOPASSWD: /usr/bin/systemctl restart pure-ftpd
+adelpanel ALL=(root) NOPASSWD: /usr/bin/systemctl reload pure-ftpd
+adelpanel ALL=(root) NOPASSWD: /usr/bin/systemctl restart php*-fpm

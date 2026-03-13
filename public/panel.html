@@ -1,0 +1,3523 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<link href="adelpanel.ico" rel="shortcut icon">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="csrf-token" content="{{CSRF_TOKEN}}">
+<title>AdelPanel</title>
+
+
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:       #0d0f11;
+    --surface:  #141618;
+    --surface2: #191c1f;
+    --border:   #1f2225;
+    --border2:  #2a2d32;
+    --text:     #e8eaed;
+    --muted:    #6b7280;
+    --accent:   #00e5a0;
+    --accent2:  #0077ff;
+    --warn:     #f59e0b;
+    --danger:   #ef4444;
+    --green:    #22c55e;
+    --purple:   #a855f7;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: Arial, Helvetica, sans-serif;
+    min-height: 100vh;
+    display: flex;
+    overflow-x: hidden;
+  }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    width: 220px;
+    height: 100vh;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    overflow-y: auto;
+  }
+  .sidebar::after {
+    content: '';
+    position: absolute;
+    top: 0; right: 0;
+    width: 1px; height: 100%;
+    background: linear-gradient(to bottom, transparent, var(--accent) 40%, transparent);
+    opacity: .2;
+  }
+  .logo {
+    padding: 20px 20px 18px;
+    border-bottom: 1px solid var(--border);
+  }
+  .logo-mark { display: flex; align-items: center; gap: 10px; }
+  .logo-icon {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, var(--accent), #00b377);
+    border-radius: 8px;
+    display: grid; place-items: center;
+    flex-shrink: 0;
+  }
+  .logo-icon svg { width: 18px; height: 18px; color: #000; }
+  .logo-name { font-size: 15px; font-weight: 800; color: var(--text); }
+  .logo-tag { font-family: 'Courier New', Courier, monospace; font-size: 9px; color: var(--muted); margin-top: 2px; }
+  .logo-icon img, .auth-logo-icon img {
+      width: 60px;
+      background-color: var(--surface);
+      border-radius: 5px;
+  }
+  .nav { padding: 14px 12px; flex: 1; overflow-y: auto; }
+  .nav-section { margin-bottom: 22px; }
+  .nav-label {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 9px; letter-spacing: 1.2px; color: var(--muted);
+    text-transform: uppercase; padding: 0 8px; margin-bottom: 5px;
+  }
+  .nav-item {
+    display: flex; align-items: center; gap: 9px;
+    padding: 8px 10px; border-radius: 8px;
+    cursor: pointer; font-size: 13px; font-weight: 600;
+    color: var(--muted); transition: all .15s;
+    position: relative; text-decoration: none;
+    user-select: none;
+  }
+  .nav-item:hover { color: var(--text); background: var(--border); }
+  .nav-item.active { color: var(--accent); background: rgba(0,229,160,.07); }
+  .nav-item.active::before {
+    content: '';
+    position: absolute; left: -12px; top: 50%; transform: translateY(-50%);
+    width: 3px; height: 16px; border-radius: 2px;
+    background: var(--accent);
+  }
+  .nav-item svg { width: 15px; height: 15px; flex-shrink: 0; }
+  .nav-badge {
+    margin-left: auto;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 10px; font-weight: 600;
+    background: rgba(0,229,160,.15); color: var(--accent);
+    padding: 1px 6px; border-radius: 20px;
+  }
+
+  .server-info {
+    padding: 12px 18px;
+    border-top: 1px solid var(--border);
+    display: flex; align-items: center; gap: 9px;
+  }
+  .server-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--green); box-shadow: 0 0 6px var(--green);
+    animation: pulse 2s infinite; flex-shrink: 0;
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+  .server-text { font-family:'Courier New',monospace; font-size: 10px; color: var(--muted); line-height: 1.5; }
+  .server-text strong { color: var(--text); font-size: 11px; }
+
+  /* ── MAIN ── */
+  .main { flex: 1; display: flex; flex-direction: column; overflow-y: auto; min-height: 100vh; min-width: 0; }
+
+  .topbar {
+    padding: 16px 28px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--bg); position: sticky; top: 0; z-index: 10;
+  }
+  .page-title { font-size: 18px; font-weight: 800; }
+  .page-sub { font-family: 'Courier New', Courier, monospace; font-size: 10px; color: var(--muted); margin-top: 2px; }
+  .topbar-actions { display: flex; align-items: center; gap: 10px; }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 7px 14px; border-radius: 8px; font-size: 12.5px;
+    font-weight: 700; font-family: Arial, Helvetica, sans-serif;
+    cursor: pointer; border: none; transition: all .15s;
+  }
+  .btn svg { width: 13px; height: 13px; flex-shrink: 0; }
+  .btn-primary { background: var(--accent); color: #000; }
+  .btn-primary:hover { background: #00ffb3; transform: translateY(-1px); }
+  .btn-danger { background: rgba(239,68,68,.12); color: var(--danger); border: 1px solid rgba(239,68,68,.2); }
+  .btn-danger:hover { background: rgba(239,68,68,.2); }
+  .btn-warn { background: rgba(245,158,11,.12); color: var(--warn); border: 1px solid rgba(245,158,11,.2); }
+  .btn-warn:hover { background: rgba(245,158,11,.2); }
+  .btn-blue { background: rgba(0,119,255,.12); color: var(--accent2); border: 1px solid rgba(0,119,255,.2); }
+  .btn-blue:hover { background: rgba(0,119,255,.2); }
+  .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border2); }
+  .btn-ghost:hover { color: var(--text); border-color: var(--muted); }
+  .btn-sm { padding: 5px 11px; font-size: 11.5px; }
+  .btn-xs { padding: 3px 8px; font-size: 11px; }
+  .content { padding: 22px 28px; flex: 1; }
+  .backup-row { display: flex;flex-direction: column;align-items: flex-start;font-size: 10px;padding: 12px;border-bottom: 1px solid #1d1d1d;}
+
+  /* ── PAGE VIEWS ── */
+  .page { display: none; }
+  .page.active { display: block; animation: fadeUp .3s ease both; }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+
+  /* ── STATS ROW ── */
+  .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 22px; }
+  .stat-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 15px 17px;
+    position: relative; overflow: hidden; transition: border-color .2s;
+  }
+  .stat-card:hover { border-color: var(--border2); }
+  .stat-label { font-family: 'Courier New', Courier, monospace; font-size: 10px; color: var(--muted); margin-bottom: 7px; }
+  .stat-value { font-size: 26px; font-weight: 800; line-height: 1; }
+  .stat-meta { font-size: 11px; color: var(--muted); margin-top: 4px; }
+  .stat-bar { margin-top: 11px; height: 3px; background: var(--border2); border-radius: 2px; }
+  .stat-fill { height: 100%; border-radius: 2px; }
+  .stat-icon { position: absolute; top: 13px; right: 14px; opacity: .12; width: 26px; height: 26px; }
+
+  /* ── TABLE ── */
+  .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+  .table-head {
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  }
+  .table-title { font-size: 14px; font-weight: 700; }
+  .table-actions { display: flex; align-items: center; gap: 8px; }
+  .search-box {
+    display: flex; align-items: center; gap: 7px;
+    background: var(--bg); border: 1px solid var(--border2);
+    border-radius: 8px; padding: 5px 10px;
+  }
+  .search-box svg { width: 13px; height: 13px; color: var(--muted); flex-shrink: 0; }
+  .search-box input {
+    background: none; border: none; outline: none;
+    color: var(--text); font-size: 12px; font-family: Arial, Helvetica, sans-serif;
+    width: 160px;
+  }
+  .search-box input::placeholder { color: var(--muted); }
+
+  table { width: 100%; border-collapse: collapse; }
+  thead th {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 10px; font-weight: 600; letter-spacing: .5px;
+    color: var(--muted); text-transform: uppercase;
+    padding: 10px 20px; text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  tbody tr { transition: background .12s; cursor: default; }
+  tbody tr:hover { background: rgba(255,255,255,.02); }
+  tbody tr:not(:last-child) td { border-bottom: 1px solid var(--border); }
+  tbody td { padding: 12px 20px; font-size: 13px; vertical-align: middle; }
+
+  .badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 10px; font-weight: 600;
+    padding: 2px 7px; border-radius: 5px;
+  }
+  .badge-green { background: rgba(34,197,94,.12); color: var(--green); }
+  .badge-warn  { background: rgba(245,158,11,.12); color: var(--warn); }
+  .badge-danger{ background: rgba(239,68,68,.12); color: var(--danger); }
+  .badge-blue  { background: rgba(0,119,255,.12); color: var(--accent2); }
+  .badge-muted { background: rgba(107,114,128,.12); color: var(--muted); }
+  .badge-purple{ background: rgba(168,85,247,.12); color: var(--purple); }
+  .badge::before { content:''; width:5px; height:5px; border-radius:50%; background: currentColor; }
+
+  .row-actions { display: flex; gap: 6px; }
+
+  /* ── DASHBOARD PANELS ── */
+  .main-actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 22px; }
+  .action-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; padding: 20px 18px;
+    cursor: pointer; transition: all .2s;
+    display: flex; flex-direction: column; gap: 10px;
+    text-decoration: none; color: inherit; position: relative; overflow: hidden;
+  }
+  .action-card::before { content:''; position:absolute; bottom:0; left:0; right:0; height:2px; opacity:0; transition:opacity .2s; }
+  .action-card:hover { border-color: var(--border2); transform: translateY(-1px); }
+  .action-card:hover::before { opacity:1; }
+  .ac-sites::before { background: var(--accent); }
+  .ac-db::before    { background: var(--accent2); }
+  .ac-settings::before { background: var(--warn); }
+  .ac-sites:hover  { box-shadow: 0 8px 24px rgba(0,229,160,.06); }
+  .ac-db:hover     { box-shadow: 0 8px 24px rgba(0,119,255,.06); }
+  .ac-settings:hover { box-shadow: 0 8px 24px rgba(245,158,11,.06); }
+  .ac-icon { width: 38px; height: 38px; border-radius: 10px; display:grid; place-items:center; }
+  .ac-icon svg { width: 18px; height: 18px; }
+  .ac-sites .ac-icon   { background:rgba(0,229,160,.1); color:var(--accent); }
+  .ac-db .ac-icon      { background:rgba(0,119,255,.1); color:var(--accent2); }
+  .ac-settings .ac-icon{ background:rgba(245,158,11,.1); color:var(--warn); }
+  .ac-title { font-size: 14px; font-weight: 700; }
+  .ac-desc  { font-size: 11px; color: var(--muted); line-height: 1.5; }
+  .ac-count { font-family:'Courier New',monospace; font-size:11px; font-weight:600; margin-top:auto; }
+  .ac-sites .ac-count   { color:var(--accent); }
+  .ac-db .ac-count      { color:var(--accent2); }
+  .ac-settings .ac-count{ color:var(--warn); }
+
+  .bottom-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .panel { background:var(--surface); border:1px solid var(--border); border-radius:14px; overflow:hidden; }
+  .panel-head { padding:13px 18px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+  .panel-title { font-size:13px; font-weight:700; }
+  .site-row { display:flex; align-items:center; gap:10px; padding:11px 18px; border-bottom:1px solid var(--border); transition:background .15s; }
+  .site-row:last-child { border-bottom:none; }
+  .site-row:hover { background:rgba(255,255,255,.02); }
+  .site-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
+  .dot-ok   { background:var(--green); box-shadow:0 0 5px var(--green); }
+  .dot-warn { background:var(--warn); }
+  .dot-off  { background:var(--muted); }
+  .site-domain { font-size:13px; font-weight:600; }
+  .site-meta   { font-family:'Courier New',monospace; font-size:10px; color:var(--muted); }
+  .log-line { display:flex; align-items:flex-start; gap:9px; padding:9px 18px; border-bottom:1px solid var(--border); font-family:'Courier New',monospace; font-size:11px; }
+  .log-line:last-child { border-bottom:none; }
+  .log-time { color:var(--muted); flex-shrink:0; padding-top:1px; }
+  .log-dot  { width:6px; height:6px; border-radius:50%; flex-shrink:0; margin-top:3px; }
+  .log-ok   { background:var(--green); }
+  .log-info { background:var(--accent2); }
+  .log-warn { background:var(--warn); }
+  .log-err  { background:var(--danger); }
+
+  /* ── LOGS PAGE ── */
+  .log-tabs { display:flex; gap:4px; margin-bottom:16px; }
+  .log-tab {
+    padding: 6px 14px; border-radius: 8px; font-size: 12px; font-weight: 600;
+    cursor: pointer; color: var(--muted); border: 1px solid transparent;
+    transition: all .15s;
+  }
+  .log-tab:hover { color: var(--text); }
+  .log-tab.active { color: var(--accent); background: rgba(0,229,160,.07); border-color: rgba(0,229,160,.2); }
+  .log-viewer {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; overflow: hidden;
+  }
+  .log-viewer-head {
+    padding: 12px 18px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .log-viewer-body {
+    font-family: 'Courier New', Courier, monospace; font-size: 11.5px;
+    padding: 16px 18px; height: 460px; overflow-y: auto; line-height: 1.8;
+  }
+  .log-entry { display: flex; gap: 16px; }
+  .log-ts { color: var(--muted); flex-shrink: 0; }
+  .log-level-ok   { color: var(--green); }
+  .log-level-warn { color: var(--warn); }
+  .log-level-err  { color: var(--danger); }
+  .log-level-info { color: var(--accent2); }
+  .log-text { color: var(--text); }
+
+  /* ── SETTINGS PAGE ── */
+  .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .settings-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+  .settings-card-head { padding: 14px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+  .settings-card-icon { width:32px; height:32px; border-radius:8px; display:grid; place-items:center; }
+  .settings-card-icon svg { width:15px; height:15px; }
+  .settings-card-title { font-size:13px; font-weight:700; }
+  .settings-card-body { padding: 16px 20px; display:flex; flex-direction:column; gap:12px; }
+  .form-row { display:flex; flex-direction:column; gap:5px; }
+  .form-label { font-family:'Courier New',monospace; font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; }
+  .form-input {
+    background: var(--bg); border: 1px solid var(--border2);
+    border-radius: 8px; padding: 8px 12px;
+    color: var(--text); font-size: 12.5px; font-family: Arial, Helvetica, sans-serif;
+    outline: none; transition: border-color .15s;
+  }
+  .form-input:focus { border-color: var(--accent); }
+  select.form-input { cursor: pointer; }
+  .form-input-row { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: end; }
+  .settings-full { grid-column: 1 / -1; }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,.7); backdrop-filter: blur(4px);
+    z-index: 100; align-items: center; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--surface); border: 1px solid var(--border2);
+    border-radius: 16px; padding: 0; width: 480px; max-width: 95vw;
+    animation: modalIn .2s ease;
+    max-height: 90vh; overflow-y: auto;
+  }
+  @keyframes modalIn { from{opacity:0;transform:scale(.96)} to{opacity:1;transform:scale(1)} }
+  .modal-head {
+    padding: 18px 22px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .modal-title { font-size: 15px; font-weight: 800; }
+  .modal-close {
+    width: 28px; height: 28px; border-radius: 7px;
+    background: var(--border); border: none; cursor: pointer;
+    display: grid; place-items: center; color: var(--muted);
+    transition: all .15s;
+  }
+  .modal-close:hover { background: var(--border2); color: var(--text); }
+  .modal-body { padding: 20px 22px; display: flex; flex-direction: column; gap: 14px; }
+  .modal-footer { padding: 14px 22px; border-top: 1px solid var(--border); display: flex; gap: 8px; justify-content: flex-end; }
+
+  /* ── CHECKBOX GROUP ── */
+  .checkbox-group { display: flex; flex-wrap: wrap; gap: 8px; }
+  .cb-item { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+  .cb-item input { accent-color: var(--accent); width: 13px; height: 13px; cursor: pointer; }
+  .cb-item label { font-size: 12px; color: var(--text); cursor: pointer; font-family: 'Courier New', Courier, monospace; }
+
+  /* ── AUTH PAGE ── */
+  .auth-page {
+    display: none; position: fixed; inset: 0;
+    background: var(--bg); z-index: 200;
+    align-items: center; justify-content: center;
+  }
+  .auth-page.open { display: flex; }
+  .auth-box {
+    background: var(--surface); border: 1px solid var(--border2);
+    border-radius: 20px; padding: 36px 40px; width: 380px;
+    display: flex; flex-direction: column; gap: 22px;
+  }
+  .auth-logo { display: flex; align-items: center; gap: 25px; }
+  .auth-logo-icon {
+    width: 40px; height: 40px;
+    background: linear-gradient(135deg, var(--accent), #00b377);
+    border-radius: 10px; display: grid; place-items: center;
+  }
+  .auth-logo-icon svg { width: 20px; height: 20px; color: #000; }
+  .auth-logo-name { font-size: 20px; font-weight: 800; }
+  .auth-logo-tag  { font-family:'Courier New',monospace; font-size:9px; color:var(--muted); }
+  .auth-title { font-size: 22px; font-weight: 800; }
+  .auth-sub   { font-size: 12px; color: var(--muted); margin-top: 4px; line-height: 1.5; }
+  .auth-form  { display: flex; flex-direction: column; gap: 12px; }
+  .auth-input {
+    background: var(--bg); border: 1px solid var(--border2);
+    border-radius: 10px; padding: 10px 14px;
+    color: var(--text); font-size: 13px; font-family: Arial, Helvetica, sans-serif;
+    outline: none; transition: border-color .15s; width: 100%;
+  }
+  .auth-input:focus { border-color: var(--accent); }
+  .auth-btn {
+    width: 100%; padding: 11px; border-radius: 10px;
+    background: var(--accent); color: #000;
+    font-size: 14px; font-weight: 800; font-family: Arial, Helvetica, sans-serif;
+    border: none; cursor: pointer; transition: all .15s;
+  }
+  .auth-btn:hover { background: #00ffb3; transform: translateY(-1px); }
+  .auth-reset { font-size: 12px; color: var(--accent); cursor: pointer; text-align: center; text-decoration: underline; }
+  .auth-error { background: rgba(239,68,68,.1); border: 1px solid rgba(239,68,68,.2); border-radius: 8px; padding: 9px 12px; font-size: 12px; color: var(--danger); display: none; }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+  /* ── DIVIDER ── */
+  .divider { height: 1px; background: var(--border); margin: 4px 0; }
+
+  /* ── SECTION HEADER ── */
+  .section-hdr { display:flex; align-items:center; justify-content:space-between; margin-bottom: 14px; }
+  .section-hdr-title { font-size: 15px; font-weight: 700; }
+
+  /* PHP version chips */
+  .php-chips { display:flex; gap:6px; flex-wrap:wrap; }
+  .php-chip {
+    padding: 5px 12px; border-radius: 8px; font-size: 12px; font-weight: 600;
+    font-family:'Courier New',monospace; cursor:pointer;
+    border: 1px solid var(--border2); color: var(--muted); transition:all .15s;
+  }
+  .php-chip:hover { border-color: var(--accent); color: var(--accent); }
+  .php-chip.active { background: rgba(0,229,160,.1); border-color: var(--accent); color: var(--accent); }
+
+  /* Danger zone */
+  .danger-zone { background: rgba(239,68,68,.05); border: 1px solid rgba(239,68,68,.15); border-radius: 14px; padding: 16px 20px; display:flex; align-items:center; justify-content:space-between; gap:16px; }
+  .danger-zone-text h4 { font-size:13px; font-weight:700; color:var(--danger); }
+  .danger-zone-text p  { font-size:11.5px; color:var(--muted); margin-top:3px; }
+
+  /* FTP icon color */
+  .ac-ftp::before { background: var(--purple); }
+  .ac-ftp:hover   { box-shadow: 0 8px 24px rgba(168,85,247,.06); }
+  .ac-ftp .ac-icon { background: rgba(168,85,247,.1); color: var(--purple); }
+  .ac-ftp .ac-count { color: var(--purple); }
+
+  /* Engine picker */
+  .engine-btn {
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    padding: 10px 8px; border-radius: 10px; cursor: pointer;
+    border: 1px solid var(--border2); font-size: 11.5px; font-weight: 600;
+    color: var(--muted); transition: all .15s; text-align: center;
+  }
+  .engine-btn:hover { border-color: var(--accent); color: var(--text); }
+  .engine-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(0,229,160,.07); }
+
+  /* Backup cards */
+  .backup-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: 18px; }
+  .backup-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+  .backup-card-head { padding: 13px 18px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .backup-entry { display: flex; align-items: center; gap: 10px; padding: 10px 18px; border-bottom: 1px solid var(--border); font-size: 12px; }
+  .backup-entry:last-child { border-bottom: none; }
+  .backup-name { flex: 1; font-family: 'Courier New', Courier, monospace; font-size: 11px; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .backup-size { font-family: 'Courier New', Courier, monospace; font-size: 10px; color: var(--muted); flex-shrink: 0; }
+
+  /* Firewall table */
+  .fw-status { display: flex; align-items: center; gap: 8px; padding: 12px 18px; background: rgba(34,197,94,.05); border: 1px solid rgba(34,197,94,.15); border-radius: 10px; margin-bottom: 16px; font-size: 13px; }
+
+  /* PHP manager */
+  .php-version-row { display: flex; align-items: center; gap: 12px; padding: 12px 20px; border-bottom: 1px solid var(--border); }
+  .php-version-row:last-child { border-bottom: none; }
+  .php-ver-num { font-family: 'Courier New', Courier, monospace; font-size: 14px; font-weight: 700; width: 40px; }
+
+  /* Empty state */
+  .empty-state { padding: 48px 20px; text-align: center; color: var(--muted); }
+  .empty-state svg { width: 36px; height: 36px; opacity: .3; margin-bottom: 12px; }
+  .empty-state p { font-size: 13px; }
+
+  /* Toggle */
+  .toggle { position:relative; display:inline-block; width:36px; height:20px; }
+  .toggle input { display:none; }
+  .toggle-slider {
+    position:absolute; inset:0; border-radius:20px;
+    background:var(--border2); cursor:pointer; transition:.2s;
+  }
+  .toggle-slider::before {
+    content:''; position:absolute; width:14px; height:14px;
+    border-radius:50%; background:#fff; bottom:3px; left:3px; transition:.2s;
+  }
+  .toggle input:checked + .toggle-slider { background: var(--accent); }
+  .toggle input:checked + .toggle-slider::before { transform: translateX(16px); }
+
+  .flex-row { display:flex; align-items:center; justify-content:space-between; }
+  .text-muted { color: var(--muted); font-size: 12px; }
+
+  /* ── NOTIFICATIONS ── */
+  .notif-wrap { position: relative; }
+  .notif-badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 18px; height: 18px; padding: 0 5px;
+    background: var(--danger); color: #fff;
+    border-radius: 9px; font-size: 10px; font-weight: 700;
+    margin-left: 2px;
+  }
+  .notif-panel {
+    display: none; position: absolute; top: calc(100% + 8px); right: 0;
+    width: 400px; background: var(--surface);
+    border: 1px solid var(--border2); border-radius: 14px;
+    box-shadow: 0 12px 40px rgba(0,0,0,.5);
+    z-index: 1000; overflow: hidden;
+  }
+  .notif-panel.open { display: flex; flex-direction: column; }
+  .notif-panel-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 16px; border-bottom: 1px solid var(--border);
+  }
+  .notif-panel-title { font-size: 13px; font-weight: 700; }
+  .notif-filter {
+    display: flex; gap: 4px; padding: 10px 12px;
+    border-bottom: 1px solid var(--border); flex-wrap: wrap;
+  }
+  .notif-filter-btn {
+    padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;
+    border: 1px solid var(--border2); background: transparent;
+    color: var(--muted); cursor: pointer; font-family: Arial, sans-serif;
+    transition: .12s;
+  }
+  .notif-filter-btn.active { background: var(--surface2); color: var(--text); border-color: var(--border2); }
+  .notif-filter-btn:hover { color: var(--text); }
+  .notif-list { max-height: 380px; overflow-y: auto; }
+  .notif-item {
+    display: flex; gap: 11px; padding: 12px 16px;
+    border-bottom: 1px solid var(--border); cursor: pointer;
+    transition: background .1s; position: relative;
+  }
+  .notif-item:hover { background: var(--surface2); }
+  .notif-item--unread { background: rgba(0,229,160,.03); }
+  .notif-item--unread::before {
+    content: ''; position: absolute; left: 6px; top: 50%;
+    transform: translateY(-50%);
+    width: 5px; height: 5px; border-radius: 50%; background: var(--accent);
+  }
+  .notif-item-icon {
+    width: 32px; height: 32px; border-radius: 8px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; font-size: 14px;
+  }
+  .notif-item-body { flex: 1; min-width: 0; }
+  .notif-item-title { font-size: 12px; font-weight: 700; margin-bottom: 2px; color: var(--text); }
+  .notif-item-msg   { font-size: 11px; color: var(--muted); line-height: 1.4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .notif-item-time  { font-size: 10px; color: var(--muted); margin-top: 3px; }
+  .notif-dot-new    { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); flex-shrink: 0; align-self: center; }
+  .notif-empty { padding: 32px; text-align: center; color: var(--muted); font-size: 13px; }
+  .notif-badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 16px; height: 16px; border-radius: 8px; background: var(--danger);
+    color: #fff; font-size: 10px; font-weight: 700; padding: 0 4px; margin-left: 4px;
+  }
+  .notif-panel { position: absolute; top: calc(100% + 8px); right: 0;
+    width: 380px; background: var(--surface); border: 1px solid var(--border2);
+    border-radius: 14px; box-shadow: 0 8px 30px rgba(0,0,0,.5);
+    z-index: 500; overflow: hidden; display: none; }
+  .notif-panel.open { display: block; }
+  .notif-panel-head { display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 16px; border-bottom: 1px solid var(--border); }
+  .notif-panel-title { font-size: 13px; font-weight: 700; }
+  .notif-list { max-height: 380px; overflow-y: auto; }
+  .notif-wrap { position: relative; }
+  /* legacy kept for compat */
+  .notif-dot { display:none; }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════
+     AUTH PAGE
+══════════════════════════════════ -->
+<div class="auth-page open" id="authPage">
+  <div class="auth-box">
+    <div class="auth-logo">
+      <div class="auth-logo-icon">
+        <img src="adelpanel.png">
+      </div>
+      <div>
+        <div class="auth-logo-name">AdelPanel</div>
+        <div class="auth-logo-tag">v0.13-alpha · Server Control</div>
+      </div>
+    </div>
+    <div>
+      <div class="auth-title">Вход в панель</div>
+      <div class="auth-sub">Используйте системного пользователя сервера</div>
+    </div>
+    <div class="auth-form">
+      <div class="auth-error" id="authError">Неверный логин или пароль</div>
+      <div class="form-row">
+        <div class="form-label">Пользователь</div>
+        <input type="text" class="auth-input" id="authUser" placeholder="root или системный юзер">
+      </div>
+      <div class="form-row">
+        <div class="form-label">Пароль</div>
+        <input type="password" class="auth-input" id="authPass" placeholder="••••••••">
+      </div>
+      <button class="auth-btn" onclick="doLogin()">Войти</button>
+      <div style="text-align:center;margin-top:4px">
+        <a href="/forgot-password" style="font-size:12px;color:var(--muted);text-decoration:none;border-bottom:1px dashed var(--border2)">Забыли пароль?</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     SIDEBAR
+══════════════════════════════════ -->
+<aside class="sidebar">
+  <div class="logo">
+    <div class="logo-mark">
+      <div class="logo-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+      </div>
+      <div>
+        <div class="logo-name">AdelPanel</div>
+        <div class="logo-tag">v0.13-alpha</div>
+      </div>
+    </div>
+  </div>
+
+  <nav class="nav">
+    <div class="nav-section">
+      <div class="nav-label">Обзор</div>
+      <a class="nav-item active" onclick="showPage('dashboard', this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Главная
+      </a>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Управление</div>
+      <a class="nav-item" onclick="showPage('sites', this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+        Сайты
+      </a>
+      <a class="nav-item" onclick="showPage('databases', this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v6c0 1.66 4 3 9 3s9-1.34 9-3V5"/><path d="M3 11v6c0 1.66 4 3 9 3s9-1.34 9-3v-6"/></svg>
+        Базы данных
+      </a>
+      <a class="nav-item" onclick="showPage('ftp', this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.19 12 19.79 19.79 0 0 1 1.1 3.38 2 2 0 0 1 3.08 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.09 8.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+        FTP
+      </a>
+      <a class="nav-item" onclick="showPage('ssl', this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        SSL-сертификаты
+      </a>
+      <a class="nav-item" onclick="showPage('backups', this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Бэкапы
+      </a>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Система</div>
+      <a class="nav-item" onclick="showPage('firewall', this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Файервол
+      </a>
+      <a class="nav-item" onclick="showPage('logs', this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        Логи
+      </a>
+      <a class="nav-item" onclick="showPage('settings', this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M21 12h-2M19.07 19.07l-1.41-1.41M12 21v-2M4.93 19.07l1.41-1.41M3 12h2M4.93 4.93l1.41 1.41M12 3V5"/></svg>
+        Настройки
+      </a>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Дополнительно</div>
+      <a class="nav-item" onclick="showPage('extras-pma', this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+        PHPMyAdmin
+      </a>
+      <a class="nav-item" onclick="showPage('extras-fm', this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+        Файловый менеджер
+      </a>
+    </div>
+  </nav>
+
+  <div class="server-info">
+    <div class="server-dot"></div>
+    <div class="server-text" id="sidebarServerInfo">
+      <strong id="sidebarHostname">Загрузка...</strong><br>
+      <span id="sidebarIpOs">—</span>
+    </div>
+  </div>
+</aside>
+
+<!-- ══════════════════════════════════
+     MAIN
+══════════════════════════════════ -->
+<div class="main">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div>
+      <div class="page-title" id="pageTitle">Главная</div>
+      <div class="page-sub" id="pageSub">UPTIME: 14д 6ч 42м &nbsp;·&nbsp; NGINX 1.24 &nbsp;·&nbsp; PHP 8.2</div>
+    </div>
+    <div class="topbar-actions">
+      <!-- Уведомления -->
+      <div class="notif-wrap" id="notifWrap">
+        <button class="btn btn-ghost btn-sm" id="notifBtn" onclick="toggleNotifPanel()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M22 17H2a3 3 0 0 0 3-3V9a7 7 0 0 1 14 0v5a3 3 0 0 0 3 3zm-8.27 4a2 2 0 0 1-3.46 0"/></svg>
+          Уведомления
+          <span class="notif-badge" id="notifBadge" style="display:none">0</span>
+        </button>
+        <!-- Дропдаун -->
+        <div class="notif-panel" id="notifPanel">
+          <div class="notif-panel-head">
+            <span class="notif-panel-title">Уведомления</span>
+            <div style="display:flex;gap:6px">
+              <button class="btn btn-ghost btn-xs" onclick="notifReadAll()">Всё прочитано</button>
+              <button class="btn btn-ghost btn-xs" onclick="notifClearRead()">Очистить</button>
+            </div>
+          </div>
+          <div class="notif-filter">
+            <button class="notif-filter-btn active" onclick="filterNotif('all',this)">Все</button>
+            <button class="notif-filter-btn" onclick="filterNotif('ssl',this)">SSL</button>
+            <button class="notif-filter-btn" onclick="filterNotif('auth',this)">Вход</button>
+            <button class="notif-filter-btn" onclick="filterNotif('site',this)">Сайты</button>
+            <button class="notif-filter-btn" onclick="filterNotif('db',this)">БД</button>
+            <button class="notif-filter-btn" onclick="filterNotif('ftp',this)">FTP</button>
+          </div>
+          <div class="notif-list" id="notifList">
+            <div class="notif-empty">Загрузка...</div>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn btn-ghost btn-sm" onclick="logout()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Выйти
+      </button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- ══════════ DASHBOARD ══════════ -->
+    <div class="page active" id="page-dashboard">
+      <div class="stats-row" id="dashStats">
+        <div class="stat-card"><div class="stat-label">CPU</div><div class="stat-value" id="statCpu" style="color:var(--accent)">—</div><div class="stat-meta" id="statCpuMeta">Загрузка...</div><div class="stat-bar"><div class="stat-fill" id="statCpuBar" style="width:0%;background:var(--accent)"></div></div></div>
+        <div class="stat-card"><div class="stat-label">RAM</div><div class="stat-value" id="statRam" style="color:var(--accent2)">—</div><div class="stat-meta" id="statRamMeta">Загрузка...</div><div class="stat-bar"><div class="stat-fill" id="statRamBar" style="width:0%;background:var(--accent2)"></div></div></div>
+        <div class="stat-card"><div class="stat-label">ДИСК</div><div class="stat-value" id="statDisk" style="color:var(--warn)">—</div><div class="stat-meta" id="statDiskMeta">Загрузка...</div><div class="stat-bar"><div class="stat-fill" id="statDiskBar" style="width:0%;background:var(--warn)"></div></div></div>
+        <div class="stat-card"><div class="stat-label">АПТАЙМ</div><div class="stat-value" id="statUptime" style="color:var(--green)">—</div><div class="stat-meta" id="statUptimeMeta">Загрузка...</div></div>
+      </div>
+
+      <div class="main-actions">
+        <a class="action-card ac-sites" onclick="showPage('sites', document.querySelectorAll('.nav-item')[1])">
+          <div class="ac-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></div>
+          <div><div class="ac-title">Сайты</div><div class="ac-desc">Добавление доменов, Nginx конфиги, SSL автоматически</div></div>
+          <div class="ac-count" id="dashSitesCount">— →</div>
+        </a>
+        <a class="action-card ac-db" onclick="showPage('databases', document.querySelectorAll('.nav-item')[2])">
+          <div class="ac-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v6c0 1.66 4 3 9 3s9-1.34 9-3V5"/><path d="M3 11v6c0 1.66 4 3 9 3s9-1.34 9-3v-6"/></svg></div>
+          <div><div class="ac-title">Базы данных</div><div class="ac-desc">Создание MySQL/MariaDB БД и пользователей в один клик</div></div>
+          <div class="ac-count" id="dashDbCount">— →</div>
+        </a>
+        <a class="action-card ac-settings" onclick="showPage('settings', document.querySelectorAll('.nav-item')[6])">
+          <div class="ac-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M21 12h-2M19.07 19.07l-1.41-1.41M12 21v-2M4.93 19.07l1.41-1.41M3 12h2M4.93 4.93l1.41 1.41M12 3V5"/></svg></div>
+          <div><div class="ac-title">Настройки сервера</div><div class="ac-desc">PHP версии, LEMP/LAMP стек, брандмауэр, SSH-ключи</div></div>
+          <div class="ac-count">Открыть →</div>
+        </a>
+      </div>
+
+      <div class="bottom-grid">
+        <div class="panel">
+          <div class="panel-head">
+            <span class="panel-title">Активные сайты</span>
+            <button class="btn btn-ghost btn-sm" onclick="showPage('sites', document.querySelectorAll('.nav-item')[1])">Все сайты</button>
+          </div>
+          <div id="dashSitesList"><div style="padding:18px;color:var(--muted);font-size:12px">Загрузка...</div></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head">
+            <span class="panel-title">Последние события</span>
+            <button class="btn btn-ghost btn-sm" onclick="showPage('logs', document.querySelectorAll('.nav-item')[5])">Все логи</button>
+          </div>
+          <div id="dashLogsList"><div style="padding:18px;color:var(--muted);font-size:12px">Загрузка...</div></div>
+        </div>
+      </div>
+    </div>
+
+        <!-- ══════════ SITES ══════════ -->
+    <div class="page" id="page-sites">
+      <div class="section-hdr">
+        <div class="section-hdr-title">Управление сайтами</div>
+        <button class="btn btn-primary btn-sm" onclick="openModal('modalAddSite')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Добавить сайт
+        </button>
+      </div>
+      <div class="table-wrap">
+        <div class="table-head">
+          <div class="table-title">Сайты <span id="sitesCount" style="color:var(--muted);font-weight:500;font-size:12px"></span></div>
+          <div class="table-actions">
+            <div class="search-box">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text" id="sitesSearch" placeholder="Поиск домена..." oninput="filterSites(this.value)">
+            </div>
+          </div>
+        </div>
+        <table>
+          <thead><tr><th>Домен</th><th>PHP</th><th>Путь</th><th>SSL</th><th>HTTP AUTH</th><th>Статус</th><th>Действия</th></tr></thead>
+          <tbody id="sitesTbody"><tr><td colspan="7" style="text-align:center;padding:20px;color:var(--muted)">Загрузка...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+<!-- ══════════ DATABASES ══════════ -->
+    <div class="page" id="page-databases">
+      <div class="section-hdr">
+        <div class="section-hdr-title">Базы данных</div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost btn-sm" onclick="openModal('modalAddDB')">+ База данных</button>
+          <button class="btn btn-primary btn-sm" onclick="openModal('modalAddDBUser')">+ Пользователь</button>
+        </div>
+      </div>
+      <div class="table-wrap" style="margin-bottom:16px">
+        <div class="table-head"><div class="table-title">Базы данных <span id="dbCount" style="color:var(--muted);font-weight:500;font-size:12px"></span></div></div>
+        <table>
+          <thead><tr><th>База данных</th><th>Размер</th><th>Кодировка</th><th>Пользователи</th><th>Действия</th></tr></thead>
+          <tbody id="dbTbody"><tr><td colspan="5" style="text-align:center;padding:20px;color:var(--muted)">Загрузка...</td></tr></tbody>
+        </table>
+      </div>
+      <div class="table-wrap">
+        <div class="table-head"><div class="table-title">Пользователи MySQL <span id="dbUserCount" style="color:var(--muted);font-weight:500;font-size:12px"></span></div></div>
+        <table>
+          <thead><tr><th>Пользователь</th><th>Хост</th><th>Базы данных</th><th>Права</th><th>Действия</th></tr></thead>
+          <tbody id="dbUsersTbody"><tr><td colspan="5" style="text-align:center;padding:20px;color:var(--muted)">Загрузка...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+<!-- ══════════ FTP ══════════ -->
+    <div class="page" id="page-ftp">
+      <div class="section-hdr">
+        <div class="section-hdr-title">FTP пользователи</div>
+        <button class="btn btn-primary btn-sm" onclick="openAddFTPModal()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Добавить FTP
+        </button>
+      </div>
+      <div class="table-wrap">
+        <div class="table-head"><div class="table-title">Пользователи FTP <span id="ftpCount" style="color:var(--muted);font-weight:500;font-size:12px"></span></div></div>
+        <table>
+          <thead><tr><th>Пользователь</th><th>Корневая папка</th><th>Сайт</th><th>Статус</th><th>Действия</th></tr></thead>
+          <tbody id="ftpTbody"><tr><td colspan="5" style="text-align:center;padding:20px;color:var(--muted)">Загрузка...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+<!-- ══════════ SSL ══════════ -->
+    <div class="page" id="page-ssl">
+      <div class="section-hdr">
+        <div class="section-hdr-title">SSL-сертификаты</div>
+        <button class="btn btn-primary btn-sm" onclick="openModal('modalSSL')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Выпустить SSL
+        </button>
+      </div>
+      <div class="table-wrap">
+        <div class="table-head"><div class="table-title">Сертификаты <span id="sslCount" style="color:var(--muted);font-weight:500;font-size:12px"></span></div></div>
+        <table>
+          <thead><tr><th>Домен</th><th>Издатель</th><th>Выдан</th><th>Истекает</th><th>Автопродление</th><th>Действия</th></tr></thead>
+          <tbody id="sslTbody"><tr><td colspan="6" style="text-align:center;padding:20px;color:var(--muted)">Загрузка...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+<!-- ══════════ LOGS ══════════ -->
+    <div class="page" id="page-logs">
+      <div class="section-hdr">
+        <div class="section-hdr-title">Системные логи</div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost btn-sm" onclick="loadLogs()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.88"/></svg>
+            Обновить
+          </button>
+        </div>
+      </div>
+      <div class="table-wrap" style="margin-bottom:14px">
+        <div class="panel-head" style="padding:14px 20px;display:flex;gap:8px;flex-wrap:wrap">
+          <button class="log-tab active" onclick="switchLogTabLive(this,'nginx:access')">Nginx access</button>
+          <button class="log-tab" onclick="switchLogTabLive(this,'nginx:error')">Nginx error</button>
+          <button class="log-tab" onclick="switchLogTabLive(this,'php:fpm')">PHP-FPM</button>
+          <button class="log-tab" onclick="switchLogTabLive(this,'ftp:main')">Pure-FTPd</button>
+          <button class="log-tab" onclick="switchLogTabLive(this,'panel:main')">Панель</button>
+        </div>
+        <div id="logContent" style="padding:0 20px 20px;height:480px;overflow-y:auto;font-family:'Courier New',monospace;font-size:11px;line-height:1.7;color:var(--muted)">Загрузка...</div>
+        <div style="padding:10px 20px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px">
+          <span style="font-family:'Courier New',monospace;font-size:10px;color:var(--muted)" id="logFileName"></span>
+          <button class="btn btn-ghost btn-xs" onclick="loadLogs()">Обновить</button>
+          <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);margin-left:auto">
+            <input type="checkbox" id="logsAutoRefresh" onchange="toggleLogsAutoRefresh(this.checked)"> Авто (30с)
+          </label>
+        </div>
+      </div>
+    </div>
+
+<!-- ══════════ SETTINGS ══════════ -->
+    <div class="page" id="page-settings">
+      <div class="section-hdr" style="margin-bottom:16px">
+        <div class="section-hdr-title">Настройки сервера</div>
+      </div>
+
+      <div class="settings-grid">
+        <!-- Основное -->
+        <div class="settings-card">
+          <div class="settings-card-head">
+            <div class="settings-card-icon" style="background:rgba(0,229,160,.1);color:var(--accent)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+            </div>
+            <div class="settings-card-title">Основные</div>
+          </div>
+          <div class="settings-card-body">
+            <div class="form-row">
+              <div class="form-label">Hostname</div>
+              <div class="form-input-row">
+                <input type="text" class="form-input" id="settingHostname" value="">
+                <button class="btn btn-primary btn-sm" onclick="doSaveHostname()">Сохранить</button>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-label">Часовой пояс</div>
+              <div class="form-input-row">
+                <select class="form-input" id="settingTimezone">
+                      <option value="UTC">UTC (Universal Time)</option>
+                      <option value="Europe/Kyiv">Europe/Kyiv</option>
+                      <option value="Europe/Moscow">Europe/Moscow</option>
+                      <option value="Asia/Almaty">Asia/Almaty</option>
+                      <option value="Europe/London">Europe/London</option>
+                      <option value="Europe/Berlin">Europe/Berlin</option>
+                      <option value="Europe/Warsaw">Europe/Warsaw</option>
+                      <option value="Europe/Paris">Europe/Paris</option>
+                      <option value="Europe/Istanbul">Europe/Istanbul</option>
+                      <option value="America/New_York">America/New_York (EST)</option>
+                      <option value="America/Chicago">America/Chicago (CST)</option>
+                      <option value="America/Los_Angeles">America/Los_Angeles (PST)</option>
+                      <option value="America/Sao_Paulo">America/Sao_Paulo</option>
+                      <option value="Asia/Dubai">Asia/Dubai</option>
+                      <option value="Asia/Tashkent">Asia/Tashkent</option>
+                      <option value="Asia/Tbilisi">Asia/Tbilisi</option>
+                      <option value="Asia/Yerevan">Asia/Yerevan</option>
+                      <option value="Asia/Baku">Asia/Baku</option>
+                      <option value="Asia/Singapore">Asia/Singapore</option>
+                      <option value="Asia/Tokyo">Asia/Tokyo</option>
+                      <option value="Asia/Hong_Kong">Asia/Hong_Kong</option>
+                      <option value="Australia/Sydney">Australia/Sydney</option>
+                      <option value="Asia/Jerusalem">Asia/Jerusalem</option>
+                      <option value="Africa/Cairo">Africa/Cairo</option>
+                </select>
+                <button class="btn btn-primary btn-sm" onclick="doSaveTimezone()">Применить</button>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-label">DNS-резолвер</div>
+              <div class="form-input-row">
+                <input type="text" class="form-input" id="settingDns" value="8.8.8.8, 1.1.1.1">
+                <button class="btn btn-primary btn-sm" onclick="doSaveDns()">Сохранить</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Своп -->
+        <div class="settings-card">
+          <div class="settings-card-head">
+            <div class="settings-card-icon" style="background:rgba(0,119,255,.1);color:var(--accent2)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/></svg>
+            </div>
+            <div class="settings-card-title">Своп (SWAP)</div>
+          </div>
+          <div class="settings-card-body">
+            <div class="flex-row">
+              <div>
+                <div class="form-label">Текущий своп</div>
+                <div style="font-size:13px;margin-top:4px">512 MB <span class="badge badge-green" style="font-size:9px">Активен</span></div>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-label">Размер свопа</div>
+              <div class="form-input-row">
+                <select class="form-input" id="settingSwap">
+                  <option value="512">512 MB</option>
+                  <option value="1024" selected>1 GB</option>
+                  <option value="2048">2 GB</option>
+                  <option value="4096">4 GB</option>
+                </select>
+                <button class="btn btn-primary btn-sm" onclick="doSetSwap()">Применить</button>
+              </div>
+            </div>
+            <button class="btn btn-danger btn-sm" onclick="doDisableSwap()">Отключить своп</button>
+          </div>
+        </div>
+
+        <!-- PHP -->
+        <div class="settings-card settings-full">
+          <div class="settings-card-head">
+            <div class="settings-card-icon" style="background:rgba(168,85,247,.1);color:var(--purple)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+            </div>
+            <div class="settings-card-title">Управление PHP</div>
+          </div>
+          <div class="settings-card-body">
+            <div id="phpVersionsList"><div style="color:var(--muted);font-size:12px">Загрузка...</div></div>
+            <div style="display:flex;align-items:center;gap:10px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+              <span style="font-size:12px;color:var(--muted)">Установить версию:</span>
+              <select class="form-input" id="phpInstallVer" style="width:100px;padding:5px 8px;font-size:12px">
+                <option>7.4</option><option>8.0</option><option>8.1</option>
+                <option>8.2</option><option>8.3</option><option>8.4</option>
+              </select>
+              <button class="btn btn-primary btn-sm" onclick="doInstallPhp()">Установить</button>
+            </div>
+          </div>
+        </div>
+
+
+        <!-- Панель -->
+        <div class="settings-card">
+          <div class="settings-card-head">
+            <div class="settings-card-icon" style="background:rgba(245,158,11,.1);color:var(--warn)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            </div>
+            <div class="settings-card-title">Настройки панели</div>
+          </div>
+          <div class="settings-card-body">
+            <div class="form-row">
+              <div class="form-label">Порт панели</div>
+              <div class="form-input-row">
+                <input type="number" class="form-input" id="settingPort" value="7474">
+                <button class="btn btn-warn btn-sm" onclick="doChangePanelPort()">Сменить</button>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-label">Пароль панели</div>
+              <div class="form-input-row">
+                <input type="password" class="form-input" id="settingNewPass" placeholder="Новый пароль">
+                <button class="btn btn-primary btn-sm" onclick="doChangePanelPass()">Сохранить</button>
+              </div>
+            </div>
+            <div class="flex-row">
+              <span class="text-muted">Разрешить только мой IP</span>
+              <label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Сервисы -->
+        <div class="settings-card settings-full">
+          <div class="settings-card-head">
+            <div class="settings-card-icon" style="background:rgba(0,119,255,.1);color:var(--accent2)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><polyline points="8 21 12 17 16 21"/></svg>
+            </div>
+            <div class="settings-card-title">Управление сервисами</div>
+          </div>
+          <div class="settings-card-body">
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+              <!-- Nginx -->
+              <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+                  <span style="font-weight:700;font-size:13px">Nginx</span>
+                  <span id="svcNginx" class="badge badge-muted">...</span>
+                </div>
+                <div style="display:flex;gap:6px">
+                  <button class="btn btn-primary btn-xs" data-svc="nginx" onclick="serviceRestart('nginx')">Перезапустить</button>
+                  <button class="btn btn-ghost btn-xs" onclick="serviceReload('nginx')">Reload</button>
+                </div>
+              </div>
+              <!-- MySQL -->
+              <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+                  <span style="font-weight:700;font-size:13px">MySQL</span>
+                  <span id="svcMysql" class="badge badge-muted">...</span>
+                </div>
+                <div style="display:flex;gap:6px">
+                  <button class="btn btn-primary btn-xs" data-svc="mysql" onclick="serviceRestart('mysql')">Перезапустить</button>
+                </div>
+              </div>
+              <!-- Pure-FTPd -->
+              <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+                  <span style="font-weight:700;font-size:13px">Pure-FTPd</span>
+                  <span id="svcFtpd" class="badge badge-muted">...</span>
+                </div>
+                <div style="display:flex;gap:6px">
+                  <button class="btn btn-primary btn-xs" data-svc="pure-ftpd" onclick="serviceRestart('pure-ftpd')">Перезапустить</button>
+                </div>
+              </div>
+            </div>
+            <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+              <span style="font-size:12px;color:var(--muted)">Обновление пакетов:</span>
+              <button class="btn btn-ghost btn-sm" onclick="runUpdate('all')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.71"/></svg>
+                apt upgrade
+              </button>
+              <button class="btn btn-ghost btn-sm" onclick="runUpdate('nginx')">nginx</button>
+              <button class="btn btn-ghost btn-sm" onclick="runUpdate('php')">php</button>
+              <button class="btn btn-ghost btn-sm" onclick="runUpdate('mysql')">mysql</button>
+              <div style="flex:1"></div>
+              <div class="danger-zone" style="flex:none">
+                <div class="danger-zone-text">
+                  <h4>Перезагрузка сервера</h4>
+                  <p>Все сайты будут недоступны ~30 сек</p>
+                </div>
+                <button class="btn btn-danger btn-sm" onclick="openModal('modalReboot')">Перезагрузить</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+
+      </div>
+    </div>
+
+    <!-- ══════════ BACKUPS ══════════ -->
+    <div class="page" id="page-backups">
+      <div class="section-hdr">
+        <div class="section-hdr-title">Бэкапы</div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost btn-sm" onclick="openModal('modalUploadSQL')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            Загрузить SQL дамп
+          </button>
+          <button class="btn btn-primary btn-sm" onclick="openModal('modalBackupFull')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Полный бэкап
+          </button>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px;margin-bottom:18px;padding:12px 16px;background:rgba(0,119,255,.05);border:1px solid rgba(0,119,255,.15);border-radius:10px;font-size:12px;color:var(--muted)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15" style="flex-shrink:0;color:var(--accent2)"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        <span id="backupScheduleInfo">Автобэкап: сайты — ежедневно 03:00 · БД — 03:30 · Полный — воскресенье 04:00 · Хранение 7 дней · Настройки в разделе «Настройки» →</span>
+      </div>
+
+      <div class="backup-grid">
+        <!-- Бэкапы сайтов -->
+        <div class="backup-card">
+          <div class="backup-card-head">
+            <span style="font-size:13px;font-weight:700">Сайты</span>
+            <button class="btn btn-primary btn-xs" onclick="openBackupSiteModal()">+ Бэкап</button>
+          </div>
+          <div id="backupList_sites"><div style="padding:16px;color:var(--muted);font-size:12px;text-align:center">Загрузка...</div></div>
+        </div>
+
+        <!-- Бэкапы БД -->
+        <div class="backup-card">
+          <div class="backup-card-head">
+            <span style="font-size:13px;font-weight:700">Базы данных</span>
+            <div style="display:flex;gap:5px">
+              <button class="btn btn-ghost btn-xs" onclick="openModal('modalUploadSQL')">Загрузить</button>
+              <button class="btn btn-primary btn-xs" onclick="openBackupDbModal()">+ Бэкап</button>
+            </div>
+          </div>
+          <div id="backupList_databases"><div style="padding:16px;color:var(--muted);font-size:12px;text-align:center">Загрузка...</div></div>
+        </div>
+
+        <!-- Полные бэкапы -->
+        <div class="backup-card">
+          <div class="backup-card-head">
+            <span style="font-size:13px;font-weight:700">Полные бэкапы</span>
+            <span class="badge badge-muted" style="font-size:9px">XtraBackup</span>
+          </div>
+          <div id="backupList_full"><div style="padding:16px;color:var(--muted);font-size:12px;text-align:center">Загрузка...</div></div>
+        </div>
+      </div>
+
+      <!-- Настройки бэкапов -->
+      <div style="margin-top:20px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px">
+        <div style="font-size:13px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+          Настройки расписания бэкапов
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px">
+          <div class="form-row" style="margin:0">
+            <div class="form-label">Хранить бэкапы сайтов</div>
+            <div class="form-input-row">
+              <input type="number" class="form-input" value="7" min="1" max="365" id="sitesKeepDays">
+              <span style="color:var(--muted);font-size:12px;white-space:nowrap">дней</span>
+            </div>
+          </div>
+          <div class="form-row" style="margin:0">
+            <div class="form-label">Хранить бэкапы БД</div>
+            <div class="form-input-row">
+              <input type="number" class="form-input" value="7" min="1" max="365" id="dbKeepDays">
+              <span style="color:var(--muted);font-size:12px;white-space:nowrap">дней</span>
+            </div>
+          </div>
+          <div class="form-row" style="margin:0">
+            <div class="form-label">Хранить полные бэкапы</div>
+            <div class="form-input-row">
+              <input type="number" class="form-input" value="7" min="1" max="365" id="fullKeepDays">
+              <span style="color:var(--muted);font-size:12px;white-space:nowrap">дней</span>
+            </div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:14px">
+          <div class="form-row" style="margin:0">
+            <div class="form-label">Cron — сайты</div>
+            <input type="text" class="form-input" value="0 3 * * *" id="sitesCron" style="font-family:'Courier New',monospace;font-size:11px">
+          </div>
+          <div class="form-row" style="margin:0">
+            <div class="form-label">Cron — базы данных</div>
+            <input type="text" class="form-input" value="30 3 * * *" id="dbCron" style="font-family:'Courier New',monospace;font-size:11px">
+          </div>
+          <div class="form-row" style="margin:0">
+            <div class="form-label">Cron — полный бэкап</div>
+            <input type="text" class="form-input" value="0 4 * * 0" id="fullCron" style="font-family:'Courier New',monospace;font-size:11px">
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div id="backupDiskInfo" style="font-size:11px;color:var(--muted)">
+            Бэкапы в: <code style="font-family:'Courier New',monospace;color:var(--text)">/opt/backups/</code>
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="saveBackupSettings()">Сохранить настройки</button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ══════════ FIREWALL ══════════ -->
+    <div class="page" id="page-firewall">
+      <div class="section-hdr">
+        <div class="section-hdr-title">Файервол (UFW)</div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-primary btn-sm" onclick="openModal('modalAddFWRule')">+ Правило</button>
+          <button class="btn btn-danger btn-sm" onclick="openModal('modalBlockIP')">🚫 Блок IP</button>
+        </div>
+      </div>
+
+      <div class="fw-status">
+        <div class="server-dot"></div>
+        <span id="fwStatus" style="color:var(--green);font-weight:700">Загрузка...</span>
+        <span style="color:var(--muted);margin-left:8px">· Политика по умолчанию: входящие DENY, исходящие ALLOW</span>
+      </div>
+
+      <!-- Правила -->
+      <div class="table-wrap" style="margin-bottom:16px">
+        <div class="table-head">
+          <div class="table-title">Правила</div>
+          <div class="table-actions">
+            <div class="search-box">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text" placeholder="Фильтр правил...">
+            </div>
+          </div>
+        </div>
+        <table>
+          <thead><tr><th>#</th><th>Порт / Сервис</th><th>Протокол</th><th>Действие</th><th>Откуда</th><th>Комментарий</th><th></th></tr></thead>
+          <tbody id="fwRulesTbody"></tbody>
+        </table>
+      </div>
+
+      <!-- Заблокированные IP -->
+      <div class="table-wrap">
+        <div class="table-head">
+          <div class="table-title">Заблокированные IP</div>
+          <button class="btn btn-danger btn-sm" onclick="openModal('modalBlockIP')">+ Заблокировать</button>
+        </div>
+        <table>
+          <thead><tr><th>IP / CIDR</th><th>Заблокирован</th><th>Причина</th><th></th></tr></thead>
+          <tbody id="fwBlockedTbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ══════════ PHPMyAdmin ══════════ -->
+    <div class="page" id="page-extras-pma">
+      <div class="section-hdr">
+        <div class="section-hdr-title">PHPMyAdmin</div>
+        <button class="btn btn-primary btn-sm" onclick="openPma()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          Открыть PHPMyAdmin
+        </button>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px">
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px">
+          <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">Доступ</div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+            <span style="color:var(--muted);font-size:12px;width:80px">URL:</span>
+            <code id="pmaUrl" style="font-family:'Courier New',monospace;font-size:12px;color:var(--accent);background:rgba(0,229,160,.07);padding:4px 10px;border-radius:6px;flex:1">Загружается...</code>
+            <button class="btn btn-ghost btn-xs" onclick="copyPmaUrl()">Копировать</button>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+            <span style="color:var(--muted);font-size:12px;width:80px">Статус:</span>
+            <span id="pmaStatus" class="badge badge-muted">Проверяю...</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="color:var(--muted);font-size:12px;width:80px">Авторизация:</span>
+            <span class="badge badge-green">MySQL логин/пароль</span>
+          </div>
+        </div>
+
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px">
+          <div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px">Безопасность</div>
+          <div style="font-size:12px;color:var(--text);line-height:1.8">
+            ✓ URL содержит 8-символьный случайный токен<br>
+            ✓ Доступен только через порт панели (7474)<br>
+            ✓ Защищён тем же файерволом<br>
+            ✓ Логин через учётные данные MySQL<br>
+            <span style="color:var(--warn)">⚠ Не открывайте на 80/443 порту</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════ FILE MANAGER ══════════ -->
+    <div class="page" id="page-extras-fm">
+      <div class="section-hdr">
+        <div class="section-hdr-title">Файловый менеджер</div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost btn-sm" onclick="reloadFm()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.71"/></svg>
+            Обновить
+          </button>
+          <button class="btn btn-primary btn-sm" onclick="openFmFull()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            Полный экран
+          </button>
+        </div>
+      </div>
+
+      <div style="background:rgba(0,119,255,.05);border:1px solid rgba(0,119,255,.15);border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:12px;color:var(--muted)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13" style="vertical-align:middle;margin-right:6px;color:var(--accent2)"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        FileGator — доступ разрешён только авторизованным пользователям панели. Показывает содержимое <strong style="color:var(--text)">/var/www/</strong>
+      </div>
+
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden">
+        <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
+          <div style="display:flex;gap:5px">
+            <div style="width:10px;height:10px;border-radius:50%;background:#ef4444"></div>
+            <div style="width:10px;height:10px;border-radius:50%;background:#f59e0b"></div>
+            <div style="width:10px;height:10px;border-radius:50%;background:#22c55e"></div>
+          </div>
+          <code id="fmUrl" style="font-size:11px;color:var(--muted);font-family:'Courier New',monospace;flex:1">Загрузка...</code>
+          <span id="fmStatus" class="badge badge-muted">Загрузка...</span>
+        </div>
+        <iframe id="fmFrame"
+                src="about:blank"
+                style="width:100%;height:650px;border:none;background:#fff"
+                onload="if(this.src!=='about:blank'){document.getElementById('fmStatus').textContent='Готов';document.getElementById('fmStatus').className='badge badge-green';}">
+        </iframe>
+      </div>
+
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+
+<!-- ══════════════════════════════════
+     MODALS
+══════════════════════════════════ -->
+
+<!-- Add Site -->
+<div class="modal-overlay" id="modalAddSite">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-title">Добавить сайт</div><button class="modal-close" onclick="closeModal('modalAddSite')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <div class="modal-body">
+      <div class="form-row"><div class="form-label">Домен</div><input type="text" id="newSiteDomain" class="form-input" placeholder="example.com"></div>
+      <div class="form-row"><div class="form-label">Путь (оставьте пустым для авто)</div><input type="text" id="newSiteWebroot" class="form-input" placeholder="/var/www/example"></div>
+      <div class="form-row">
+        <div class="form-label">Движок / CMS</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:2px" id="enginePicker">
+          <div class="engine-btn active" onclick="selectEngine(this,'wordpress')">
+            <span style="font-size:18px">🔵</span><span>WordPress</span>
+          </div>
+          <div class="engine-btn" onclick="selectEngine(this,'laravel')">
+            <span style="font-size:18px">🔴</span><span>Laravel</span>
+          </div>
+          <div class="engine-btn" onclick="selectEngine(this,'drupal')">
+            <span style="font-size:18px">🟢</span><span>Drupal</span>
+          </div>
+          <div class="engine-btn" onclick="selectEngine(this,'joomla')">
+            <span style="font-size:18px">🟠</span><span>Joomla</span>
+          </div>
+          <div class="engine-btn" onclick="selectEngine(this,'html')">
+            <span style="font-size:18px">📄</span><span>HTML</span>
+          </div>
+          <div class="engine-btn" onclick="selectEngine(this,'php')">
+            <span style="font-size:18px">🐘</span><span>PHP</span>
+          </div>
+        </div>
+        <input type="hidden" id="selectedEngine" value="wordpress">
+      </div>
+      <div class="form-row">
+        <div class="form-label">Версия PHP</div>
+        <select id="newSitePhp" class="form-input"><option>8.3</option><option selected>8.2</option><option>8.1</option><option>8.0</option><option>7.4</option></select>
+      </div>
+      <div class="flex-row">
+        <span class="text-muted">Автоматически выпустить SSL (Let's Encrypt)</span>
+        <label class="toggle"><input type="checkbox" id="newSiteSsl"><span class="toggle-slider"></span></label>
+      </div>
+      <div class="flex-row">
+        <span class="text-muted">Создать базу данных автоматически</span>
+        <label class="toggle"><input type="checkbox" id="newSiteDb"><span class="toggle-slider"></span></label>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('modalAddSite')">Отмена</button>
+      <button class="btn btn-primary btn-sm" onclick="doCreateSite()">Создать сайт</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Site -->
+<div class="modal-overlay" id="modalDeleteSite">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-title">Удалить сайт</div><button class="modal-close" onclick="closeModal('modalDeleteSite')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <div class="modal-body">
+      <div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:10px;padding:14px 16px;">
+        <div style="font-size:13px;font-weight:700;color:var(--danger);margin-bottom:6px">⚠ Внимание!</div>
+        <div style="font-size:12px;color:var(--muted);line-height:1.6">Вы удаляете сайт <strong id="deleteSiteDomain" style="color:var(--text)"></strong>. Это действие необратимо.</div>
+      </div>
+      <div class="flex-row">
+        <span class="text-muted">Удалить файлы сайта</span>
+        <label class="toggle"><input type="checkbox" id="deleteSiteFiles"><span class="toggle-slider"></span></label>
+      </div>
+      <div class="form-row"><div class="form-label">Введите домен для подтверждения</div><input type="text" id="deleteSiteConfirm" class="form-input" placeholder="example.com"></div>
+      <input type="hidden" id="deleteSiteDomainInput">
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('modalDeleteSite')">Отмена</button>
+      <button class="btn btn-danger btn-sm" onclick="doDeleteSite(document.getElementById('deleteSiteDomainInput').value)">Удалить</button>
+    </div>
+  </div>
+</div>
+
+<!-- SSL Modal -->
+<div class="modal-overlay" id="modalSSL">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-title">SSL-сертификат</div><button class="modal-close" onclick="closeModal('modalSSL')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <div class="modal-body">
+      <div class="form-row"><div class="form-label">Домен</div><input type="text" id="sslDomain" class="form-input" readonly></div>
+      <div id="sslDnsStatus" style="display:none;margin-bottom:10px"></div>
+      <div class="form-row">
+        <div class="form-label">Email для Let's Encrypt</div>
+        <input type="email" id="sslIssueEmail" class="form-input" placeholder="admin@example.com">
+      </div>
+      <div class="form-row">
+        <div class="form-label">Тип сертификата</div>
+        <select id="sslType" class="form-input" onchange="document.getElementById('sslIssueBtn').disabled=this.value==='selfsigned'?false:false">
+          <option value="letsencrypt">Let's Encrypt (бесплатный)</option>
+          <option value="selfsigned">Самоподписанный</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('modalSSL')">Отмена</button>
+      <button class="btn btn-warn btn-sm" onclick="doRenewSSL(document.getElementById('sslDomain').value)">Обновить</button>
+      <button id="sslIssueBtn" class="btn btn-primary btn-sm" onclick="doIssueSSLFromModal()">Выпустить</button>
+    </div>
+  </div>
+</div>
+
+<!-- HTTP Auth -->
+<div class="modal-overlay" id="modalHTTPAuth">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-title">HTTP Basic Auth</div><button class="modal-close" onclick="closeModal('modalHTTPAuth')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <div class="modal-body">
+      <input type="hidden" id="httpAuthDomain">
+      <div class="form-row"><div class="form-label">Домен</div><input type="text" id="httpAuthDomainDisplay" class="form-input" readonly></div>
+      <div class="flex-row">
+        <span class="text-muted">Включить защиту паролем</span>
+        <label class="toggle"><input type="checkbox" id="httpAuthToggle" onchange="toggleHTTPAuth(this)"><span class="toggle-slider"></span></label>
+      </div>
+      <div id="httpAuthFields" style="display:none;flex-direction:column;gap:12px">
+        <div class="form-row"><div class="form-label">Заголовок (Realm)</div><input type="text" id="httpAuthRealm" class="form-input" placeholder="Restricted Area" value="Restricted Area"></div>
+        <div class="form-row"><div class="form-label">Логин</div><input type="text" id="httpAuthUser" class="form-input" placeholder="admin"></div>
+        <div class="form-row"><div class="form-label">Пароль</div><input type="password" id="httpAuthPass" class="form-input" placeholder="••••••••"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('modalHTTPAuth')">Отмена</button>
+      <button class="btn btn-primary btn-sm" onclick="doSiteHttpAuth()">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add DB -->
+<div class="modal-overlay" id="modalAddDB">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-title">Создать базу данных</div><button class="modal-close" onclick="closeModal('modalAddDB')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <div class="modal-body">
+      <div class="form-row"><div class="form-label">Название базы</div><input type="text" id="newDbName" class="form-input" placeholder="mysite_db"></div>
+      <div class="form-row">
+        <div class="form-label">Кодировка</div>
+        <select id="newDbCharset" class="form-input"><option value="utf8mb4" selected>utf8mb4 (рекомендуется)</option><option value="utf8">utf8</option><option value="latin1">latin1</option></select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('modalAddDB')">Отмена</button>
+      <button class="btn btn-primary btn-sm" onclick="doCreateDB()">Создать</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete DB -->
+<div class="modal-overlay" id="modalDeleteDB">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-title">Удалить базу данных</div><button class="modal-close" onclick="closeModal('modalDeleteDB')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <div class="modal-body">
+      <div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:10px;padding:14px 16px;">
+        <div style="font-size:12px;color:var(--muted);line-height:1.6">Вы удаляете БД <strong id="deleteDBName" style="color:var(--text)"></strong>. Все данные будут уничтожены безвозвратно.</div>
+      </div>
+      <input type="hidden" id="deleteDBNameInput">
+      <div class="form-row"><div class="form-label">Введите название БД для подтверждения</div><input type="text" id="deleteDBConfirm" class="form-input" placeholder="имя_бд"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('modalDeleteDB')">Отмена</button>
+      <button class="btn btn-danger btn-sm" onclick="doDeleteDB()">Удалить</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add DB User -->
+<div class="modal-overlay" id="modalAddDBUser">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-title">Создать пользователя MySQL</div><button class="modal-close" onclick="closeModal('modalAddDBUser')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <div class="modal-body">
+      <div class="form-row"><div class="form-label">Имя пользователя</div><input type="text" id="newDbUser" class="form-input" placeholder="mysite_user"></div>
+      <div class="form-row"><div class="form-label">Пароль</div><input type="password" id="newDbUserPass" class="form-input" placeholder="••••••••"></div>
+      <div class="form-row">
+        <div class="form-label">Хост</div>
+        <select id="newDbUserHost" class="form-input"><option value="localhost" selected>localhost</option><option value="%">%</option><option value="127.0.0.1">127.0.0.1</option></select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('modalAddDBUser')">Отмена</button>
+      <button class="btn btn-primary btn-sm" onclick="doCreateDBUser()">Создать</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete DB User -->
+<div class="modal-overlay" id="modalDeleteDBUser">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-title">Удалить пользователя MySQL</div><button class="modal-close" onclick="closeModal('modalDeleteDBUser')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <div class="modal-body">
+      <div style="font-size:13px;color:var(--muted)">Удалить пользователя <strong id="deleteDBUserName" style="color:var(--text)"></strong>? Все его права будут отозваны.</div>
+      <input type="hidden" id="deleteDBUserInput">
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('modalDeleteDBUser')">Отмена</button>
+      <button class="btn btn-danger btn-sm">Удалить</button>
+    </div>
+  </div>
+</div>
+
+<!-- Change DB Pass -->
+<div class="modal-overlay" id="modalChangeDBPass">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-title">Сменить пароль MySQL</div><button class="modal-close" onclick="closeModal('modalChangeDBPass')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <div class="modal-body">
+      <div class="form-row"><div class="form-label">Пользователь</div><input type="text" id="editDbUser" class="form-input" value="" readonly></div>
+      <div class="form-row"><div class="form-label">Новый пароль</div><input type="password" id="editDbPass" class="form-input" placeholder="••••••••"></div>
+      <div class="form-row"><div class="form-label">Повторите пароль</div><input type="password" id="editDbPass2" class="form-input" placeholder="••••••••"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('modalChangeDBPass')">Отмена</button>
+      <button class="btn btn-primary btn-sm" onclick="doChangeDBPass()">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Permissions -->
+<div class="modal-overlay" id="modalEditPerms">
+  <div class="modal" style="width:520px">
+    <div class="modal-head"><div class="modal-title">Права пользователя MySQL</div><button class="modal-close" onclick="closeModal('modalEditPerms')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-label">Пользователь</div>
+        <input type="text" class="form-input" value="myproject_user" readonly>
+      </div>
+      <div class="form-row">
+        <div class="form-label">База данных</div>
+        <select class="form-input"><option>myproject_db</option><option>shop_db</option><option>* (все базы)</option></select>
+      </div>
+      <div class="form-row">
+        <div class="form-label">Права</div>
+        <div style="display:flex;gap:8px;margin-bottom:8px">
+          <button class="btn btn-ghost btn-xs" onclick="checkAllPerms(true)">Все</button>
+          <button class="btn btn-ghost btn-xs" onclick="checkAllPerms(false)">Снять все</button>
+        </div>
+        <div class="checkbox-group" id="permsGroup">
+          <label class="cb-item"><input type="checkbox" checked><label>SELECT</label></label>
+          <label class="cb-item"><input type="checkbox" checked><label>INSERT</label></label>
+          <label class="cb-item"><input type="checkbox"><label>UPDATE</label></label>
+          <label class="cb-item"><input type="checkbox"><label>DELETE</label></label>
+          <label class="cb-item"><input type="checkbox"><label>CREATE</label></label>
+          <label class="cb-item"><input type="checkbox"><label>DROP</label></label>
+          <label class="cb-item"><input type="checkbox"><label>ALTER</label></label>
+          <label class="cb-item"><input type="checkbox"><label>INDEX</label></label>
+          <label class="cb-item"><input type="checkbox"><label>REFERENCES</label></label>
+          <label class="cb-item"><input type="checkbox"><label>CREATE VIEW</label></label>
+          <label class="cb-item"><input type="checkbox"><label>SHOW VIEW</label></label>
+          <label class="cb-item"><input type="checkbox"><label>TRIGGER</label></label>
+          <label class="cb-item"><input type="checkbox"><label>LOCK TABLES</label></label>
+          <label class="cb-item"><input type="checkbox"><label>EXECUTE</label></label>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('modalEditPerms')">Отмена</button>
+      <button class="btn btn-primary btn-sm">Применить права</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add User to DB -->
+<div class="modal-overlay" id="modalAddUserToDB">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-title">Добавить пользователя на базу</div><button class="modal-close" onclick="closeModal('modalAddUserToDB')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <div class="modal-body">
+      <div class="form-row"><div class="form-label">База данных</div><input type="text" id="addUserToDBName" class="form-input" readonly></div>
+      <div class="form-row">
+        <div class="form-label">Пользователь</div>
+        <select id="addUserToDbUser" class="form-input">
+          <option value="">Загрузка...</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-label">Уровень прав</div>
+        <select class="form-input" id="quickPermsSelect">
+          <option value="all">Все права (ALL)</option>
+          <option value="rw">Чтение + Запись</option>
+          <option value="r">Только чтение</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('modalAddUserToDB')">Отмена</button>
+      <button class="btn btn-primary btn-sm" onclick="doAddUserToDB()">Добавить</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add FTP -->
+<div class="modal-overlay" id="modalAddFTP">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-title">Создать FTP пользователя</div><button class="modal-close" onclick="closeModal('modalAddFTP')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <div class="modal-body">
+      <div class="form-row"><div class="form-label">Имя пользователя</div><input type="text" id="newFtpUser" class="form-input" placeholder="ftp_mysite"></div>
+      <div class="form-row"><div class="form-label">Пароль</div><input type="password" id="newFtpPass" class="form-input" placeholder="••••••••"></div>
+      <div class="form-row">
+        <div class="form-label">Привязать к сайту</div>
+        <select class="form-input" id="ftpSiteSelect" onchange="updateFTPPath(this.value)">
+          <option value="">— Указать путь вручную —</option>
+        </select>
+      </div>
+      <div class="form-row"><div class="form-label">Корневая папка</div><input type="text" class="form-input" id="ftpPathInput" placeholder="/var/www/mysite"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('modalAddFTP')">Отмена</button>
+      <button class="btn btn-primary btn-sm" onclick="doCreateFTP()">Создать</button>
+    </div>
+  </div>
+</div>
+
+<!-- Change FTP Pass -->
+<div class="modal-overlay" id="modalChangeFTPPass">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-title">Сменить FTP пароль</div><button class="modal-close" onclick="closeModal('modalChangeFTPPass')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <div class="modal-body">
+      <div class="form-row"><div class="form-label">Пользователь</div><input type="text" id="editFtpUser" class="form-input" value="" readonly></div>
+      <div class="form-row"><div class="form-label">Новый пароль</div><input type="password" id="editFtpPass" class="form-input" placeholder="••••••••"></div>
+      <div class="form-row"><div class="form-label">Повторите пароль</div><input type="password" id="editFtpPass2" class="form-input" placeholder="••••••••"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('modalChangeFTPPass')">Отмена</button>
+      <button class="btn btn-primary btn-sm" onclick="doChangeFTPPass()">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit FTP Path -->
+<div class="modal-overlay" id="modalEditFTPPath">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-title">Изменить путь FTP</div><button class="modal-close" onclick="closeModal('modalEditFTPPath')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <div class="modal-body">
+      <div class="form-row"><div class="form-label">Пользователь</div><input type="text" class="form-input" value="ftp_shop" readonly></div>
+      <div class="form-row">
+        <div class="form-label">Привязать к сайту</div>
+        <select class="form-input" onchange="updateFTPPath2(this.value)">
+          <option value="">— Указать путь вручную —</option>
+          <option value="/var/www/myproject">myproject.dev</option>
+          <option value="/var/www/shop" selected>shop.example.com</option>
+          <option value="/var/www/staging">staging.myapp.ru</option>
+        </select>
+      </div>
+      <div class="form-row"><div class="form-label">Корневая папка</div><input type="text" class="form-input" id="ftpPathInput2" value="/var/www/shop"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('modalEditFTPPath')">Отмена</button>
+      <button class="btn btn-primary btn-sm" onclick="doSaveFTPPath()">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete FTP -->
+<div class="modal-overlay" id="modalDeleteFTP">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-title">Удалить FTP пользователя</div><button class="modal-close" onclick="closeModal('modalDeleteFTP')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <div class="modal-body">
+      <div style="font-size:13px;color:var(--muted)">Удалить FTP пользователя <strong style="color:var(--text)">ftp_shop</strong>? Доступ по FTP будет закрыт.</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('modalDeleteFTP')">Отмена</button>
+      <button class="btn btn-danger btn-sm">Удалить</button>
+    </div>
+  </div>
+</div>
+
+<!-- Reboot Modal -->
+<div class="modal-overlay" id="modalReboot">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-title">Перезагрузка сервера</div><button class="modal-close" onclick="closeModal('modalReboot')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <div class="modal-body">
+      <div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:10px;padding:14px 16px;">
+        <div style="font-size:13px;font-weight:700;color:var(--danger);margin-bottom:6px">⚠ Подтвердите перезагрузку</div>
+        <div style="font-size:12px;color:var(--muted);line-height:1.6">Сервер будет перезагружен. Все сайты будут недоступны около 30–60 секунд. Панель управления тоже перезапустится.</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('modalReboot')">Отмена</button>
+      <button class="btn btn-danger btn-sm">Перезагрузить сейчас</button>
+    </div>
+  </div>
+</div>
+
+<!-- Reset Password Modal -->
+<div class="modal-overlay" id="modalResetPass">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-title">Сброс пароля</div><button class="modal-close" onclick="closeModal('modalResetPass')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <div class="modal-body">
+      <div style="font-size:12px;color:var(--muted);line-height:1.6;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;">
+        Для сброса пароля зайдите на сервер через SSH и выполните:<br><br>
+        <span style="font-family:'Courier New',monospace;color:var(--accent);font-size:11px">php /opt/adelpanel/cli.php reset-password</span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary btn-sm" onclick="closeModal('modalResetPass')">Понятно</button>
+    </div>
+  </div>
+</div>
+
+
+<script>
+  // ── CSRF ──
+  window._csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
+
+  // ── AUTH ──
+  function doLogin() {
+    const u = document.getElementById('authUser').value.trim();
+    const p = document.getElementById('authPass').value;
+    const err = document.getElementById('authError');
+    if (!u || !p) { err.style.display='block'; err.textContent='Заполните все поля'; return; }
+
+    fetch('/api/auth?action=login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': window._csrf || '' },
+      body: JSON.stringify({ username: u, password: p })
+    })
+    .then(r => r.json())
+    .then(d => {
+      if (d.success) {
+        // Token is already fresh (returned in login response)
+        if (d.csrf_token) window._csrf = d.csrf_token;
+        document.getElementById('authPage').classList.remove('open');
+        startNotifPolling();
+        // Reload current page data (dashboard) after login
+        const curPage = document.querySelector('.page.active')?.id?.replace('page-', '') || 'dashboard';
+        const navEl   = document.querySelector('.nav-item.active');
+        showPage(curPage, navEl);
+      } else {
+        err.style.display = 'block';
+        err.textContent = d.error || 'Неверный логин или пароль';
+        if (d.banned) {
+          err.style.background = 'rgba(239,68,68,.15)';
+          err.style.borderColor = 'rgba(239,68,68,.4)';
+        }
+      }
+    })
+    .catch(() => {
+      err.style.display = 'block';
+      err.textContent = 'Ошибка соединения с сервером';
+    });
+  }
+  document.getElementById('authPass').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+
+async function logout() {
+    if (_notifTimer) clearInterval(_notifTimer);
+    if (_logsRefreshTimer) clearInterval(_logsRefreshTimer);
+
+    try {
+        const r = await fetch('/api/auth?action=logout'); 
+        const d = await r.json();
+        
+        if (d.success) {
+            window.location.href = '/login'; 
+        }
+    } catch(e) {
+        // Если API упало, всё равно выкидываем на главную
+        window.location.href = '/';
+    }
+}
+
+  // ── INITIAL DATA LOAD ──
+  // Ждём CSRF токен затем загружаем дашборд
+  function initPanel() {
+    const metaCsrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
+    const doShow = () => showPage('dashboard', document.querySelector('.nav-item.active'));
+    if (!metaCsrf || metaCsrf === '{{CSRF_TOKEN}}' || metaCsrf.length < 16) {
+      // Token not injected (likely not logged in yet) - fetch it
+      fetch('/api/auth?action=csrf')
+        .then(r => r.json())
+        .then(d => { if (d.success && d.token) window._csrf = d.token; })
+        .catch(() => {})
+        .finally(doShow);
+    } else {
+      window._csrf = metaCsrf;
+      doShow();
+    }
+  }
+  initPanel();
+
+  // Проверяем сессию при загрузке страницы
+  fetch('/api/auth?action=check')
+    .then(r => r.json())
+    .then(d => {
+      if (d.data?.logged_in) {
+        document.getElementById('authPage').classList.remove('open');
+        startNotifPolling();
+      }
+    }).catch(()=>{});
+
+  // ── NAVIGATION ──
+  const pageMeta = {
+    dashboard:   { title: 'Главная',              sub: 'Загрузка...' },
+    sites:       { title: 'Сайты',                sub: 'Управление доменами · /var/www/{DOMAIN}' },
+    databases:   { title: 'Базы данных',           sub: 'MySQL / Percona' },
+    ftp:         { title: 'FTP',                  sub: 'Pure-FTPd — виртуальные пользователи' },
+    ssl:         { title: 'SSL-сертификаты',      sub: 'Let\'s Encrypt · автопродление' },
+    backups:     { title: 'Бэкапы',               sub: 'Сайты · БД · Полный бэкап (XtraBackup)' },
+    firewall:    { title: 'Файервол',             sub: 'UFW — правила, блокировка IP' },
+    logs:        { title: 'Логи',                 sub: 'Просмотр системных и сайтовых логов' },
+    settings:    { title: 'Настройки',            sub: 'Конфигурация сервера и панели' },
+    'extras-pma':{ title: 'PHPMyAdmin',           sub: 'Веб-интерфейс управления базами данных' },
+    'extras-fm': { title: 'Файловый менеджер',    sub: 'FileGator — управление файлами серверов' },
+  };
+
+  function showPage(id, navEl) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById('page-' + id).classList.add('active');
+    if (navEl) navEl.classList.add('active');
+    const m = pageMeta[id] || {};
+    document.getElementById('pageTitle').textContent = m.title || id;
+    document.getElementById('pageSub').textContent = m.sub || '';
+    // Загружаем данные при переходе на страницу
+    if (id === 'extras-pma' || id === 'extras-fm') loadPmaInfo();
+    if (id === 'dashboard') loadDashboard();
+    if (id === 'sites') loadSites();
+    if (id === 'databases') loadDatabases();
+    if (id === 'ftp') loadFtp();
+    if (id === 'ssl') loadSsl();
+    if (id === 'backups') loadBackups();
+    if (id === 'firewall') loadFirewall();
+    if (id === 'logs') loadLogs();
+    if (id === 'settings') { loadSettings(); loadPhpVersions(); }
+  }
+
+  // ── MODALS ──
+  function openModal(id) {
+    document.getElementById(id).classList.add('open');
+  }
+  function closeModal(id) {
+    document.getElementById(id).classList.remove('open');
+    // reset auth page z-index
+    document.getElementById('authPage').style.zIndex = 200;
+  }
+  document.querySelectorAll('.modal-overlay').forEach(overlay => {
+    overlay.addEventListener('click', e => {
+      if (e.target === overlay) closeModal(overlay.id);
+    });
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      document.querySelectorAll('.modal-overlay.open').forEach(m => closeModal(m.id));
+    }
+  });
+
+  // ── HTTP AUTH TOGGLE ──
+  function toggleHTTPAuth(el) {
+    const fields = document.getElementById('httpAuthFields');
+    fields.style.display = el.checked ? 'flex' : 'none';
+  }
+
+  // ── FTP PATH AUTO-FILL ──
+  function updateFTPPath(val) {
+    document.getElementById('ftpPathInput').value = val;
+  }
+  function updateFTPPath2(val) {
+    document.getElementById('ftpPathInput2').value = val;
+  }
+
+  // ── DB PERMISSIONS ──
+  function checkAllPerms(val) {
+    document.querySelectorAll('#permsGroup input[type=checkbox]').forEach(cb => cb.checked = val);
+  }
+
+  // ── LOG TABS ──
+  const logFiles = {
+    access: '/var/log/nginx/myproject.dev.access.log',
+    error:  '/var/log/nginx/myproject.dev.error.log',
+    php:    '/var/log/php8.2-fpm.log',
+    ftp:    '/var/log/vsftpd.log',
+    server: '/var/log/syslog',
+  };
+  function switchLogTab(el, type) {
+    document.querySelectorAll('.log-tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('logFileName').textContent = logFiles[type] || '';
+  }
+
+// ── ENGINE PICKER ──
+  function selectEngine(el, engine) {
+    document.querySelectorAll('.engine-btn').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('selectedEngine').value = engine;
+  }
+
+  // ── BACKUP SETTINGS ──
+  function saveBackupSettings() {
+    const payload = {
+      sites_keep_days: document.getElementById('sitesKeepDays')?.value,
+      db_keep_days:    document.getElementById('dbKeepDays')?.value,
+      full_keep_days:  document.getElementById('fullKeepDays')?.value,
+      sites_cron:      document.getElementById('sitesCron')?.value,
+      db_cron:         document.getElementById('dbCron')?.value,
+      full_cron:       document.getElementById('fullCron')?.value,
+    };
+    fetch('/api/backup_settings?action=save', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json',
+                 'X-CSRF-Token': window._csrf || '' },
+      body: JSON.stringify(payload)
+    })
+    .then(r => r.json())
+    .then(d => {
+      if (d.success) showToast('Настройки бэкапов сохранены', 'ok');
+      else showToast(d.error || 'Ошибка', 'error');
+    })
+    .catch(() => showToast('Ошибка сети', 'error'));
+  }
+
+  // ── SIMPLE TOAST ──
+  function showToast(msg, type = 'ok') {
+    const t = document.createElement('div');
+    t.style.cssText = `position:fixed;bottom:24px;right:24px;padding:10px 18px;
+      border-radius:10px;font-size:13px;font-weight:600;z-index:9999;
+      background:${type === 'ok' ? 'var(--accent)' : 'var(--danger)'};
+      color:#000;box-shadow:0 4px 20px rgba(0,0,0,.4);`;
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 3000);
+  }
+
+  // ══════════════════════════════════════════
+  //  УВЕДОМЛЕНИЯ — полная реализация
+  // ══════════════════════════════════════════
+  let _notifData      = [];
+  let _notifFilter    = 'all';
+  let _notifOpen      = false;
+  let _notifInterval  = null;
+
+  // Карта типов → фильтр
+  const NOTIF_TYPE_MAP = {
+    ssl_expiry: 'ssl', ssl_issue: 'ssl', ssl_renew: 'ssl',
+    login_fail: 'auth', password_change: 'auth',
+    site_add: 'site', site_del: 'site',
+    db_add: 'db', db_del: 'db',
+    ftp_add: 'ftp', ftp_del: 'ftp',
+  };
+
+  const NOTIF_ICONS = {
+    ssl_expiry: '🔒', ssl_issue: '✅', ssl_renew: '🔄',
+    login_fail: '⚠️', password_change: '🔑',
+    site_add: '🌐', site_del: '🗑️',
+    db_add: '🗄️', db_del: '🗑️',
+    ftp_add: '📁', ftp_del: '🗑️',
+  };
+
+  const NOTIF_SEV_COLORS = {
+    info:   'var(--accent2)',
+    warn:   'var(--warn)',
+    danger: 'var(--danger)',
+  };
+
+  async function loadNotifications() {
+    try {
+      const r = await fetch('/api/notifications?action=list&limit=60');
+      if (!r.ok) return;
+      const d = await r.json();
+      if (!d.success) return;
+      _notifData = d.data.items || [];
+      const count = d.data.unread_count || 0;
+      updateNotifBadge(count);
+      if (_notifOpen) renderNotifList();
+    } catch(e) { /* нет сети или панель не авторизована */ }
+  }
+
+  function updateNotifBadge(count) {
+    const badge = document.getElementById('notifBadge');
+    const btn   = document.getElementById('notifBtn');
+    if (!badge) return;
+    if (count > 0) {
+      badge.textContent = count > 99 ? '99+' : count;
+      badge.style.display = 'inline-flex';
+      btn?.classList.add('has-notif');
+    } else {
+      badge.style.display = 'none';
+      btn?.classList.remove('has-notif');
+    }
+  }
+
+  function renderNotifList() {
+    const list = document.getElementById('notifList');
+    if (!list) return;
+
+    const filtered = _notifFilter === 'all'
+      ? _notifData
+      : _notifData.filter(n => NOTIF_TYPE_MAP[n.type] === _notifFilter);
+
+    if (filtered.length === 0) {
+      list.innerHTML = '<div class="notif-empty">Нет уведомлений</div>';
+      return;
+    }
+
+    list.innerHTML = filtered.map(n => {
+      const icon  = NOTIF_ICONS[n.type] || '📢';
+      const color = NOTIF_SEV_COLORS[n.severity] || 'var(--accent2)';
+      const unread = !n.read ? 'notif-item--unread' : '';
+      return `
+        <div class="notif-item ${unread}" data-id="${n.id}" onclick="markNotifRead(${n.id}, this)">
+          <div class="notif-item-icon" style="color:${color};background:${color}1a">${icon}</div>
+          <div class="notif-item-body">
+            <div class="notif-item-title">${escHtml(n.title)}</div>
+            <div class="notif-item-msg">${escHtml(n.message)}</div>
+            <div class="notif-item-time">${escHtml(n.time_ago)}</div>
+          </div>
+          ${!n.read ? '<div class="notif-dot-new"></div>' : ''}
+        </div>`;
+    }).join('');
+  }
+
+  function toggleNotifPanel() {
+    _notifOpen = !_notifOpen;
+    const panel = document.getElementById('notifPanel');
+    if (!panel) return;
+    panel.classList.toggle('open', _notifOpen);
+    if (_notifOpen) {
+      renderNotifList();
+      // Закрыть при клике вне
+      setTimeout(() => document.addEventListener('click', closeNotifOutside, {once:true}), 50);
+    }
+  }
+
+  function closeNotifOutside(e) {
+    const wrap = document.getElementById('notifWrap');
+    if (wrap && !wrap.contains(e.target)) {
+      _notifOpen = false;
+      document.getElementById('notifPanel')?.classList.remove('open');
+    } else if (_notifOpen) {
+      setTimeout(() => document.addEventListener('click', closeNotifOutside, {once:true}), 50);
+    }
+  }
+
+  async function markNotifRead(id, el) {
+    if (el?.classList.contains('notif-item--unread')) {
+      el.classList.remove('notif-item--unread');
+      el.querySelector('.notif-dot-new')?.remove();
+      try {
+        await fetch('/api/notifications?action=mark_read', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json','X-CSRF-Token': window._csrf||''},
+          body: JSON.stringify({id})
+        });
+        const n = _notifData.find(x => x.id === id);
+        if (n) n.read = 1;
+        const unread = _notifData.filter(x => !x.read).length;
+        updateNotifBadge(unread);
+      } catch(e) {}
+    }
+  }
+
+  async function notifReadAll() {
+    try {
+      await fetch('/api/notifications?action=mark_all_read', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json','X-CSRF-Token': window._csrf||''},
+        body: JSON.stringify({})
+      });
+      _notifData.forEach(n => n.read = 1);
+      updateNotifBadge(0);
+      renderNotifList();
+    } catch(e) {}
+  }
+
+  function filterNotif(type, btn) {
+    _notifFilter = type;
+    document.querySelectorAll('.notif-filter-btn').forEach(b => b.classList.remove('active'));
+    btn?.classList.add('active');
+    renderNotifList();
+  }
+
+  async function notifClearRead() {
+    try {
+      await fetch('/api/notifications?action=clear_all', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json','X-CSRF-Token': window._csrf||''},
+        body: JSON.stringify({})
+      });
+      _notifData = [];
+      renderNotifList();
+      updateNotifBadge(0);
+    } catch(e) {}
+  }
+
+  function escHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // Запускаем опрос уведомлений каждые 30 секунд
+  document.addEventListener('DOMContentLoaded', () => {
+    loadNotifications();
+    _notifInterval = setInterval(loadNotifications, 30000);
+    loadDashboard();  // Загружаем дашборд при старте
+  });
+
+  // ═══════════════════════════════════════════
+  //  LIVE DATA — функции загрузки данных с сервера
+  // ═══════════════════════════════════════════
+
+  let _currentLogType = 'nginx:access';
+  let _logsRefreshTimer = null;
+  let _sitesCache = [];
+
+  // ── DASHBOARD ──────────────────────────────
+  async function loadDashboard() {
+    try {
+      const r = await fetch('/api/stats?action=all');
+      const d = await r.json();
+      if (!d.success) return;
+      const s = d.data;
+
+      // Sidebar server info
+      const sh = document.getElementById('sidebarHostname');
+      const si = document.getElementById('sidebarIpOs');
+      if (sh && s.hostname) sh.textContent = s.hostname;
+      if (si) si.textContent = `${s.server_ip||'—'} · ${s.os||'Linux'}`;
+
+      // Статы
+      if (s.cpu !== undefined) {
+        document.getElementById('statCpu').innerHTML = s.cpu + '<span style="font-size:14px;font-weight:400">%</span>';
+        document.getElementById('statCpuMeta').textContent = s.cpu_info || '';
+        document.getElementById('statCpuBar').style.width = Math.min(s.cpu, 100) + '%';
+      }
+      if (s.ram_used !== undefined) {
+        const ramUsedGb = (s.ram_used / 1024).toFixed(1);
+        const ramTotalGb = (s.ram_total / 1024).toFixed(1);
+        document.getElementById('statRam').innerHTML = ramUsedGb + '<span style="font-size:14px;font-weight:400">GB</span>';
+        document.getElementById('statRamMeta').textContent = `из ${ramTotalGb} GB · ${s.ram_pct}%`;
+        document.getElementById('statRamBar').style.width = Math.min(s.ram_pct, 100) + '%';
+      }
+      if (s.disk_used !== undefined) {
+        const diskUsedGb = (s.disk_used / 1024).toFixed(0);
+        const diskTotalGb = (s.disk_total / 1024).toFixed(0);
+        document.getElementById('statDisk').innerHTML = diskUsedGb + '<span style="font-size:14px;font-weight:400">GB</span>';
+        document.getElementById('statDiskMeta').textContent = `из ${diskTotalGb} GB · ${s.disk_pct}%`;
+        document.getElementById('statDiskBar').style.width = Math.min(s.disk_pct, 100) + '%';
+      }
+      if (s.uptime) {
+        document.getElementById('statUptime').innerHTML = escHtml(s.uptime_short || s.uptime);
+        document.getElementById('statUptimeMeta').textContent = s.uptime;
+      }
+
+      // Счётчики в action cards
+      if (s.sites_count !== undefined)
+        document.getElementById('dashSitesCount').textContent = s.sites_count + ' сайт(ов) →';
+      if (s.db_count !== undefined)
+        document.getElementById('dashDbCount').textContent = s.db_count + ' баз данных →';
+
+      // Pagemetа subtitle
+      const pageMeta_dash = document.getElementById('pageSub');
+      if (document.getElementById('page-dashboard').classList.contains('active'))
+        document.getElementById('pageSub').textContent = `UPTIME: ${s.uptime || '—'} · NGINX ${s.nginx_ver || '?'} · PHP ${s.php_ver || '?'}`;
+    } catch(e) {}
+
+    // Список сайтов на дашборде
+    try {
+      const r2 = await fetch('/api/sites?action=list');
+      const d2 = await r2.json();
+      const list = document.getElementById('dashSitesList');
+      if (d2.success && d2.data.length > 0) {
+        list.innerHTML = d2.data.slice(0, 4).map(site => {
+          const dotClass = site.ssl_ok ? 'dot-ok' : (site.ssl_expiring ? 'dot-warn' : 'dot-off');
+          const sslBadge = site.ssl_ok ? '<span class="badge badge-green">SSL ✓</span>' :
+                           (site.ssl_expiring ? `<span class="badge badge-warn">SSL ${site.ssl_days}д</span>` :
+                            '<span class="badge badge-muted">Нет SSL</span>');
+          return `<div class="site-row"><div class="site-dot ${dotClass}"></div>
+            <div style="flex:1"><div class="site-domain">${escHtml(site.domain)}</div>
+            <div class="site-meta">PHP ${escHtml(site.php||'?')} · ${escHtml(site.path||'')}</div></div>
+            ${sslBadge}</div>`;
+        }).join('') +
+        '<div style="padding:12px 18px"><button class="btn btn-primary btn-sm" style="width:100%;justify-content:center" onclick="openModal(\'modalAddSite\')">+ Добавить сайт</button></div>';
+      } else {
+        list.innerHTML = '<div style="padding:18px;color:var(--muted);font-size:12px">Сайтов нет. <button class="btn btn-primary btn-xs" onclick="openModal(\'modalAddSite\')">Добавить первый</button></div>';
+      }
+    } catch(e) {
+      document.getElementById('dashSitesList').innerHTML = '<div style="padding:18px;color:var(--muted);font-size:12px">Ошибка загрузки</div>';
+    }
+
+    // Последние события из логов панели
+    try {
+      const r3 = await fetch('/api/logs?action=panel&limit=5');
+      const d3 = await r3.json();
+      const logList = document.getElementById('dashLogsList');
+      if (d3.success && d3.data.length > 0) {
+        logList.innerHTML = d3.data.map(l => {
+          const dotCls = l.level === 'ok' ? 'log-ok' : (l.level === 'warn' ? 'log-warn' : 'log-info');
+          return `<div class="log-line"><span class="log-time">${escHtml(l.time)}</span><div class="log-dot ${dotCls}"></div><span class="log-msg">${escHtml(l.msg)}</span></div>`;
+        }).join('');
+      } else {
+        logList.innerHTML = '<div style="padding:18px;color:var(--muted);font-size:12px">Нет событий</div>';
+      }
+    } catch(e) {
+      document.getElementById('dashLogsList').innerHTML = '<div style="padding:18px;color:var(--muted);font-size:12px">Ошибка загрузки</div>';
+    }
+  }
+
+  // ── SITES ──────────────────────────────────
+  async function loadSites() {
+    try {
+      const r = await fetch('/api/sites?action=list');
+      const d = await r.json();
+      const tbody = document.getElementById('sitesTbody');
+      if (!d.success) { tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--danger)">${escHtml(d.error||'Ошибка')}</td></tr>`; return; }
+      _sitesCache = d.data || [];
+      renderSitesTable(_sitesCache);
+      const cnt = document.getElementById('sitesCount');
+      if (cnt) cnt.textContent = `(${_sitesCache.length})`;
+    } catch(e) {
+      document.getElementById('sitesTbody').innerHTML = `<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--danger)">Ошибка: ${escHtml(e.message||'соединение')}</td></tr>`;
+    }
+  }
+
+  function renderSitesTable(sites) {
+    const tbody = document.getElementById('sitesTbody');
+    if (!sites.length) { tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--muted)">Нет сайтов. Добавьте первый!</td></tr>'; return; }
+    tbody.innerHTML = sites.map(s => {
+      const sslBadge = s.ssl_ok ? '<span class="badge badge-green">Активен</span>' :
+                       (s.ssl_expiring ? `<span class="badge badge-warn">Истекает ${s.ssl_days}д</span>` : '<span class="badge badge-muted">Нет</span>');
+      const authBadge = s.http_auth ? '<span class="badge badge-green">Вкл</span>' : '<span class="badge badge-muted">Выкл</span>';
+      const statusBadge = s.nginx_ok ? '<span class="badge badge-green">Работает</span>' : '<span class="badge badge-danger">Ошибка</span>';
+      return `<tr>
+        <td><strong>${escHtml(s.domain)}</strong></td>
+        <td><span class="badge badge-blue">${escHtml(s.php||'?')}</span></td>
+        <td><span style="font-family:'Courier New',monospace;font-size:11px;color:var(--muted)">${escHtml(s.path||'')}</span></td>
+        <td>${sslBadge}</td>
+        <td>${authBadge}</td>
+        <td>${statusBadge}</td>
+        <td><div class="row-actions">
+          <button class="btn btn-blue btn-xs" onclick="openSslModal('${escHtml(s.domain)}')">SSL</button>
+          <button class="btn btn-warn btn-xs" onclick="openHttpAuthModal('${escHtml(s.domain)}', ${s.http_auth?1:0})">Auth</button>
+          <button class="btn btn-danger btn-xs" onclick="confirmDeleteSite('${escHtml(s.domain)}')">Удалить</button>
+        </div></td>
+      </tr>`;
+    }).join('');
+  }
+
+  function filterSites(q) {
+    const f = q.toLowerCase();
+    renderSitesTable(f ? _sitesCache.filter(s => s.domain.toLowerCase().includes(f)) : _sitesCache);
+  }
+
+  async function openSslModal(domain) {
+    const el = document.getElementById('sslDomain');
+    if (el) el.value = domain;
+    // Проверяем что домен направлен на наш сервер
+    const st = document.getElementById('sslDnsStatus');
+    if (st) { st.style.display='none'; st.className='badge'; }
+    openModal('modalSSL');
+    // DNS-проверка в фоне
+    try {
+      const r = await fetch(`/api/ssl?action=check_dns&domain=${encodeURIComponent(domain)}`);
+      const d = await r.json();
+      if (st) {
+        st.style.display = 'inline-block';
+        if (d.data?.ok) {
+          st.textContent = '✓ Домен направлен на сервер';
+          st.className = 'badge badge-green';
+          document.getElementById('sslIssueBtn').disabled = false;
+        } else {
+          st.textContent = '✗ Домен НЕ направлен на этот сервер — SSL не выдать';
+          st.className = 'badge badge-danger';
+          document.getElementById('sslIssueBtn').disabled = true;
+        }
+      }
+    } catch(e) {}
+  }
+  function openHttpAuthModal(domain, enabled) {
+    const el = document.getElementById('httpAuthDomain');
+    if (el) el.value = domain;
+    const disp = document.getElementById('httpAuthDomainDisplay');
+    if (disp) disp.value = domain;
+    const tog = document.getElementById('httpAuthToggle');
+    if (tog) { tog.checked = !!enabled; toggleHTTPAuth(tog); }
+    openModal('modalHTTPAuth');
+  }
+  function confirmDeleteSite(domain) {
+    const el = document.getElementById('deleteSiteDomain');
+    if (el) el.textContent = domain;
+    const inp = document.getElementById('deleteSiteDomainInput');
+    if (inp) inp.value = domain;
+    openModal('modalDeleteSite');
+  }
+
+  // ── DATABASES ──────────────────────────────
+  async function loadDatabases() {
+    try {
+      const r = await fetch('/api/databases?action=list');
+      const d = await r.json();
+      const tbody = document.getElementById('dbTbody');
+      const utbody = document.getElementById('dbUsersTbody');
+      if (!d.success) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--danger)">${escHtml(d.error||'Ошибка')}</td></tr>`;
+        return;
+      }
+      const dbs = d.data.databases || [];
+      const users = d.data.users || [];
+      document.getElementById('dbCount').textContent = `(${dbs.length})`;
+      document.getElementById('dbUserCount').textContent = `(${users.length})`;
+      if (!dbs.length) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--muted)">Нет баз данных</td></tr>';
+      } else {
+        tbody.innerHTML = dbs.map(db => `<tr>
+          <td><strong>${escHtml(db.name)}</strong></td>
+          <td><span style="font-family:'Courier New',monospace;font-size:11px">${escHtml(db.size||'—')}</span></td>
+          <td><span class="badge badge-muted">${escHtml(db.charset||'utf8mb4')}</span></td>
+          <td>${(db.users||[]).map(u=>`<span class="badge badge-blue">${escHtml(u)}</span>`).join(' ')}</td>
+          <td><div class="row-actions">
+            <button class="btn btn-blue btn-xs" onclick="openAddUserToDBModal('${escHtml(db.name)}')">Добавить юзера</button>
+            <button class="btn btn-danger btn-xs" onclick="confirmDeleteDB('${escHtml(db.name)}')">Удалить</button>
+          </div></td>
+        </tr>`).join('');
+      }
+      if (!users.length) {
+        utbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--muted)">Нет пользователей</td></tr>';
+      } else {
+        utbody.innerHTML = users.map(u => `<tr>
+          <td><strong>${escHtml(u.name)}</strong></td>
+          <td><span class="badge badge-muted">${escHtml(u.host||'localhost')}</span></td>
+          <td>${(u.databases||[]).map(db=>`<span class="badge badge-blue">${escHtml(db)}</span>`).join(' ')}</td>
+          <td><span class="badge badge-green">${escHtml(u.grants||'ALL')}</span></td>
+          <td><div class="row-actions">
+            <button class="btn btn-warn btn-xs" onclick="openChangeDBPassModal('${escHtml(u.name)}')">Пароль</button>
+            <button class="btn btn-blue btn-xs" onclick="openEditPermsModal('${escHtml(u.name)}')">Права</button>
+            <button class="btn btn-danger btn-xs" onclick="confirmDeleteDBUser('${escHtml(u.name)}')">Удалить</button>
+          </div></td>
+        </tr>`).join('');
+      }
+    } catch(e) {
+      document.getElementById('dbTbody').innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--danger)">Ошибка соединения</td></tr>';
+    }
+  }
+
+  async function openAddUserToDBModal(db) {
+    const el = document.getElementById('addUserToDBName');
+    if (el) el.value = db;
+    // Load users into select
+    const sel = document.getElementById('addUserToDbUser');
+    if (sel) {
+      sel.innerHTML = '<option value="">Загрузка...</option>';
+      try {
+        const r = await fetch('/api/databases?action=list');
+        const d = await r.json();
+        if (d.success && d.data?.users?.length) {
+          sel.innerHTML = d.data.users.map(u => `<option value="${escHtml(u.name)}">${escHtml(u.name)}</option>`).join('');
+        } else {
+          sel.innerHTML = '<option value="">Нет пользователей</option>';
+        }
+      } catch(e) { sel.innerHTML = '<option value="">Ошибка</option>'; }
+    }
+    openModal('modalAddUserToDB');
+  }
+  function confirmDeleteDB(db) {
+    const el = document.getElementById('deleteDBName'); if (el) el.textContent = db;
+    const i = document.getElementById('deleteDBNameInput'); if (i) i.value = db;
+    const c = document.getElementById('deleteDBConfirm'); if (c) c.value = '';
+    openModal('modalDeleteDB');
+  }
+  function openChangeDBPassModal(u) { const el = document.getElementById('changeDBPassUser'); if (el) el.value = u; openModal('modalChangeDBPass'); }
+  function openEditPermsModal(u) { const el = document.getElementById('editPermsUser'); if (el) el.value = u; openModal('modalEditPerms'); }
+  function confirmDeleteDBUser(u) { const el = document.getElementById('deleteDBUserName'); if (el) el.textContent = u; const i = document.getElementById('deleteDBUserInput'); if (i) i.value = u; openModal('modalDeleteDBUser'); }
+
+  // ── FTP ────────────────────────────────────
+  async function loadFtp() {
+    try {
+      const r = await fetch('/api/ftp?action=list');
+      const d = await r.json();
+      const tbody = document.getElementById('ftpTbody');
+      if (!d.success) { tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--danger)">${escHtml(d.error||'Ошибка')}</td></tr>`; return; }
+      const users = d.data || [];
+      document.getElementById('ftpCount').textContent = `(${users.length})`;
+      if (!users.length) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--muted)">Нет FTP-пользователей</td></tr>';
+      } else {
+        tbody.innerHTML = users.map(u => `<tr>
+          <td><strong>${escHtml(u.login)}</strong></td>
+          <td><span style="font-family:'Courier New',monospace;font-size:11px;color:var(--muted)">${escHtml(u.path||'')}</span></td>
+          <td><span class="badge badge-blue">${escHtml(u.site||'—')}</span></td>
+          <td><span class="badge badge-green">Активен</span></td>
+          <td><div class="row-actions">
+            <button class="btn btn-warn btn-xs" onclick="openChangeFTPPassModal('${escHtml(u.login)}')">Пароль</button>
+            <button class="btn btn-blue btn-xs" onclick="openEditFTPPathModal('${escHtml(u.login)}', '${escHtml(u.path||'')}')">Путь</button>
+            <button class="btn btn-danger btn-xs" onclick="confirmDeleteFTP('${escHtml(u.login)}')">Удалить</button>
+          </div></td>
+        </tr>`).join('');
+      }
+    } catch(e) {
+      document.getElementById('ftpTbody').innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--danger)">Ошибка соединения</td></tr>';
+    }
+  }
+
+  async function openAddFTPModal() {
+    // Загружаем список сайтов для селектора
+    const sel = document.getElementById('ftpSiteSelect');
+    if (sel) {
+      sel.innerHTML = '<option value="">— Указать путь вручную —</option>';
+      try {
+        const r = await fetch('/api/sites?action=list');
+        const d = await r.json();
+        if (d.success && d.data) {
+          d.data.forEach(s => {
+            const opt = document.createElement('option');
+            opt.value = s.webroot || s.path || '';
+            opt.textContent = s.domain;
+            sel.appendChild(opt);
+          });
+        }
+      } catch(e) {}
+    }
+    openModal('modalAddFTP');
+  }
+
+  function openChangeFTPPassModal(login) { const el = document.getElementById('changeFTPPassUser'); if (el) el.value = login; openModal('modalChangeFTPPass'); }
+  function openEditFTPPathModal(login, path) { const el = document.getElementById('editFTPPathUser'); if (el) el.value = login; const p = document.getElementById('ftpPathInput2'); if (p) p.value = path; openModal('modalEditFTPPath'); }
+  function confirmDeleteFTP(login) { const el = document.getElementById('deleteFTPUser'); if (el) el.textContent = login; const i = document.getElementById('deleteFTPUserInput'); if (i) i.value = login; openModal('modalDeleteFTP'); }
+
+  // ── SSL ────────────────────────────────────
+  async function loadSsl() {
+    try {
+      const r = await fetch('/api/ssl?action=list');
+      const d = await r.json();
+      const tbody = document.getElementById('sslTbody');
+      if (!d.success) { tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--danger)">${escHtml(d.error||'Ошибка')}</td></tr>`; return; }
+      const certs = d.data || [];
+      document.getElementById('sslCount').textContent = `(${certs.length})`;
+      if (!certs.length) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--muted)">Нет сертификатов</td></tr>';
+      } else {
+        tbody.innerHTML = certs.map(c => {
+          const expBadge = c.days_left > 30 ? `<span class="badge badge-green">${escHtml(String(c.days_left))}д</span>` :
+                           (c.days_left > 7 ? `<span class="badge badge-warn">${escHtml(String(c.days_left))}д</span>` :
+                            `<span class="badge badge-danger">${escHtml(String(c.days_left))}д</span>`);
+          return `<tr>
+            <td><strong>${escHtml(c.domain)}</strong></td>
+            <td><span class="badge badge-muted">${escHtml(c.issuer||'Let\'s Encrypt')}</span></td>
+            <td><span style="font-size:11px;color:var(--muted)">${escHtml(c.issued_at||'—')}</span></td>
+            <td>${expBadge}</td>
+            <td>${c.auto_renew ? '<span class="badge badge-green">Вкл</span>' : '<span class="badge badge-muted">Выкл</span>'}</td>
+            <td><div class="row-actions">
+              <button class="btn btn-blue btn-xs" onclick="renewSsl('${escHtml(c.domain)}')">Продлить</button>
+              <button class="btn btn-danger btn-xs" onclick="revokeSsl('${escHtml(c.domain)}')">Отозвать</button>
+            </div></td>
+          </tr>`;
+        }).join('');
+      }
+    } catch(e) {
+      document.getElementById('sslTbody').innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--danger)">Ошибка соединения</td></tr>';
+    }
+  }
+
+  async function renewSsl(domain) {
+    showToast(`Продление SSL для ${domain}...`, 'ok');
+    try {
+      const r = await fetch('/api/ssl?action=renew', { method:'POST', headers:{'Content-Type':'application/json','X-CSRF-Token':window._csrf||''}, body:JSON.stringify({domain}) });
+      const d = await r.json();
+      showToast(d.success ? 'SSL продлён' : (d.error||'Ошибка'), d.success ? 'ok' : 'error');
+      if (d.success) loadSsl();
+    } catch(e) { showToast('Ошибка сети', 'error'); }
+  }
+
+  async function revokeSsl(domain) {
+    if (!confirm(`Отозвать сертификат для ${domain}?`)) return;
+    try {
+      const r = await fetch('/api/ssl?action=revoke', { method:'POST', headers:{'Content-Type':'application/json','X-CSRF-Token':window._csrf||''}, body:JSON.stringify({domain}) });
+      const d = await r.json();
+      showToast(d.success ? 'Сертификат отозван' : (d.error||'Ошибка'), d.success ? 'ok' : 'error');
+      if (d.success) loadSsl();
+    } catch(e) { showToast('Ошибка сети', 'error'); }
+  }
+
+  // ── BACKUPS ────────────────────────────────
+  async function loadBackups() {
+    try {
+      const r = await fetch('/api/backup?action=list');
+      const d = await r.json();
+      if (!d.success) return;
+      ['sites','databases','full'].forEach(type => {
+        const el = document.getElementById(`backupList_${type}`);
+        if (!el) return;
+        const items = (d.data[type] || []);
+        if (!items.length) { el.innerHTML = '<div style="padding:16px;color:var(--muted);font-size:12px;text-align:center">Нет бэкапов</div>'; return; }
+        el.innerHTML = items.map(b => `
+          <div class="backup-row">
+            <div class="backup-icon">📦</div>
+            <div class="backup-name">${escHtml(b.name)}</div>
+            <div class="backup-size">${escHtml(b.size||'')}</div>
+            <div class="backup-date">${escHtml(b.date||'')}</div>
+            <div class="row-actions">
+              <button class="btn btn-blue btn-xs" onclick="downloadBackup('${escHtml(b.name)}','${type}')">Скачать</button>
+              <button class="btn btn-warn btn-xs" onclick="restoreBackup('${escHtml(b.name)}','${type}')">Восстановить</button>
+              <button class="btn btn-danger btn-xs" onclick="doDeleteBackup('${escHtml(b.name)}','${type}')">Удалить</button>
+            </div>
+          </div>`).join('');
+      });
+    } catch(e) {}
+  }
+
+  function restoreBackup(name, type) {
+    if (type === 'sites') { const el = document.getElementById('restoreSiteFile'); if (el) el.value = name; openModal('modalRestoreSite'); }
+    else if (type === 'databases') { const el = document.getElementById('restoreDBFile'); if (el) el.value = name; openModal('modalRestoreDB'); }
+  }
+
+  // ── FIREWALL ───────────────────────────────
+  async function loadFirewall() {
+    try {
+      const r = await fetch('/api/firewall?action=list');
+      const d = await r.json();
+      if (!d.success) return;
+      const rules = d.data.rules || [];
+      const blocked = d.data.blocked || [];
+      const el = document.getElementById('fwRulesTbody');
+      if (el) {
+        if (!rules.length) {
+          el.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--muted)">Нет правил</td></tr>';
+        } else {
+          el.innerHTML = rules.map((rule, i) => `<tr>
+            <td><span style="font-family:'Courier New',monospace;color:var(--muted)">${i+1}</span></td>
+            <td><strong>${escHtml(rule.port||rule.service||'?')}</strong></td>
+            <td><span class="badge badge-muted">${escHtml(rule.proto||'tcp')}</span></td>
+            <td><span class="badge ${rule.action==='ALLOW'?'badge-green':'badge-danger'}">${escHtml(rule.action||'?')}</span></td>
+            <td><span class="badge badge-muted">${escHtml(rule.from||'Anywhere')}</span></td>
+            <td><span style="color:var(--muted);font-size:11px">${escHtml(rule.comment||'')}</span></td>
+            <td>${rule.readonly ? '<span style="color:var(--muted);font-size:10px;font-family:\'Courier New\',monospace">🔒 защищено</span>' :
+              `<button class="btn btn-danger btn-xs" onclick="doDeleteFWRule(${rule.num})">Удалить</button>`}</td>
+          </tr>`).join('');
+        }
+      }
+      const el2 = document.getElementById('fwBlockedTbody');
+      if (el2) {
+        if (!blocked.length) {
+          el2.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--muted)">Нет заблокированных IP</td></tr>';
+        } else {
+          el2.innerHTML = blocked.map(b => `<tr>
+            <td><strong style="font-family:'Courier New',monospace">${escHtml(b.ip)}</strong></td>
+            <td><span style="color:var(--muted);font-size:11px">${escHtml(b.reason||'')}</span></td>
+            <td><span style="color:var(--muted);font-size:11px">${escHtml(b.date||'')}</span></td>
+            <td><button class="btn btn-blue btn-xs" onclick="unblockIP('${escHtml(b.ip)}')">Разблокировать</button></td>
+          </tr>`).join('');
+        }
+      }
+      // UFW status
+      const st = document.getElementById('fwStatus');
+      if (st) {
+        st.textContent = d.data.status === 'active' ? 'UFW активен' : 'UFW неактивен';
+        st.style.color = d.data.status === 'active' ? 'var(--green)' : 'var(--danger)';
+      }
+    } catch(e) {}
+  }
+
+  async function deleteFWRule(num) { return doDeleteFWRule(num); }
+
+  async function unblockIP(ip) { return doUnblockIP(ip); }
+
+  // ── LOGS ───────────────────────────────────
+  async function loadLogs() {
+    try {
+      const content = document.getElementById('logContent');
+      if (content) content.textContent = 'Загрузка...';
+      const r = await fetch(`/api/logs?action=view&type=${_currentLogType}&limit=200`);
+      const d = await r.json();
+      if (content) {
+        if (d.success) {
+          const filename = d.data.file || '';
+          document.getElementById('logFileName').textContent = filename;
+          const lines = (d.data.lines || []);
+          content.innerHTML = lines.length
+            ? lines.map(l => {
+                const text = typeof l === 'object' ? (l.raw || '') : l;
+                const lvl  = typeof l === 'object' ? (l.level || 'info') : 'info';
+                const color = lvl==='error' ? 'var(--danger)' : (lvl==='warn' ? 'var(--warn)' : lvl==='ok' ? 'var(--green)' : 'var(--text)');
+                return `<div style="border-bottom:1px solid var(--border);padding:2px 0;color:${color};font-size:11px;font-family:'Courier New',monospace">${escHtml(text)}</div>`;
+              }).join('')
+            : '<div style="color:var(--muted)">Файл пустой</div>';
+          content.scrollTop = content.scrollHeight;
+        } else {
+          content.textContent = d.error || 'Ошибка загрузки';
+        }
+      }
+    } catch(e) {
+      const content = document.getElementById('logContent');
+      if (content) content.textContent = 'Ошибка соединения';
+    }
+  }
+
+  function switchLogTabLive(el, type) {
+    document.querySelectorAll('.log-tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+    _currentLogType = type;
+    loadLogs();
+  }
+
+  function toggleLogsAutoRefresh(on) {
+    if (_logsRefreshTimer) { clearInterval(_logsRefreshTimer); _logsRefreshTimer = null; }
+    if (on) _logsRefreshTimer = setInterval(loadLogs, 30000);
+  }
+
+  // ── SETTINGS ───────────────────────────────
+  async function loadSettings() {
+    try {
+      const r = await fetch('/api/settings?action=get');
+      const d = await r.json();
+      if (!d.success) return;
+      const s = d.data;
+      const fields = {
+        'settingHostname':  s.hostname,
+        'settingTimezone':  s.timezone,
+        'settingDns':       s.dns,
+        'settingSwapSize':  s.swap_size,
+        'settingPanelPort': s.panel_port,
+        'settingAcmeEmail': s.acme_email,
+      };
+      for (const [id, val] of Object.entries(fields)) {
+        const el = document.getElementById(id);
+        if (el && val !== undefined && val !== null) el.value = val;
+      }
+      // Swap статус
+      const swapStatus = document.getElementById('swapStatus');
+      if (swapStatus) {
+        swapStatus.textContent = s.swap_active ? `${s.swap_size||0} MB · Активен` : 'Нет свопа';
+        swapStatus.className   = s.swap_active ? 'badge badge-green' : 'badge badge-muted';
+      }
+      // Статус сервисов
+      if (s.services) renderServiceStatuses(s.services);
+    } catch(e) {}
+  }
+
+  function renderServiceStatuses(services) {
+    const map = { 'nginx': 'svcNginx', 'mysql': 'svcMysql', 'pure-ftpd': 'svcFtpd' };
+    for (const [svc, elId] of Object.entries(map)) {
+      const el = document.getElementById(elId);
+      if (!el) continue;
+      const st = services[svc] || 'unknown';
+      el.textContent = st;
+      el.className = 'badge ' + (st === 'active' ? 'badge-green' : 'badge-danger');
+    }
+  }
+
+  async function serviceRestart(svc) {
+    const btn = document.querySelector(`[data-svc="${svc}"]`);
+    if (btn) { btn.disabled = true; btn.textContent = '...'; }
+    try {
+      const res = await apiPost('/api/settings?action=service_restart', { service: svc });
+      showToast(res.success ? `${svc} перезапущен` : (res.error || 'Ошибка'), res.success ? 'ok' : 'error');
+      if (res.success && res.data) {
+        const map = { 'nginx': 'svcNginx', 'mysql': 'svcMysql', 'pure-ftpd': 'svcFtpd' };
+        const el = document.getElementById(map[svc]);
+        if (el) { el.textContent = res.data.status; el.className = 'badge ' + (res.data.status === 'active' ? 'badge-green' : 'badge-danger'); }
+      }
+    } catch(e) { showToast('Ошибка сети', 'error'); }
+    if (btn) { btn.disabled = false; btn.textContent = 'Перезапустить'; }
+  }
+
+  async function serviceReload(svc) {
+    const res = await apiPost('/api/settings?action=service_reload', { service: svc });
+    showToast(res.success ? `${svc}: конфиг перезагружен` : (res.error || 'Ошибка'), res.success ? 'ok' : 'error');
+  }
+
+</script><!-- Backup Site -->
+<div class="modal-overlay" id="modalBackupSite">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-title">Бэкап сайта</div><button class="modal-close" onclick="closeModal('modalBackupSite')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <div class="modal-body">
+      <div class="form-row"><div class="form-label">Сайт</div>
+        <select class="form-input" id="backupSiteSelect">
+          <option value="" disabled>Загрузка сайтов...</option>
+        </select>
+      </div>
+      <div style="font-size:12px;color:var(--muted)">Бэкап будет создан в <code style="font-family:'Courier New',monospace">/opt/backups/sites/</code></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('modalBackupSite')">Отмена</button>
+      <button id="backupSiteBtn" class="btn btn-primary btn-sm" onclick="doBackupSite()">Создать бэкап</button>
+    </div>
+  </div>
+</div>
+
+<!-- Backup DB -->
+<div class="modal-overlay" id="modalBackupDB">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-title">Бэкап базы данных</div><button class="modal-close" onclick="closeModal('modalBackupDB')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <div class="modal-body">
+      <div class="form-row"><div class="form-label">База данных</div>
+        <select class="form-input" id="backupDbSelect">
+          <option value="" disabled>Загрузка баз...</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('modalBackupDB')">Отмена</button>
+      <button id="backupDbBtn" class="btn btn-primary btn-sm" onclick="doBackupDb()">Создать бэкап</button>
+    </div>
+  </div>
+</div>
+
+<!-- Backup Full -->
+<div class="modal-overlay" id="modalBackupFull">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-title">Полный бэкап</div><button class="modal-close" onclick="closeModal('modalBackupFull')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <div class="modal-body">
+      <div style="font-size:13px;color:var(--muted);line-height:1.7">
+        Создаст полный бэкап через <strong style="color:var(--text)">XtraBackup</strong>:<br>
+        · Все базы данных (бинарный бэкап)<br>
+        · Все файлы сайтов <code style="font-family:'Courier New',monospace">/var/www/</code><br><br>
+        Сохраняется в <code style="font-family:'Courier New',monospace">/opt/backups/full/ДАТА/</code><br>
+        Операция может занять несколько минут.
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('modalBackupFull')">Отмена</button>
+      <button class="btn btn-primary btn-sm">Запустить</button>
+    </div>
+  </div>
+</div>
+
+<!-- Restore Site -->
+<div class="modal-overlay" id="modalRestoreSite">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-title">Восстановить сайт</div><button class="modal-close" onclick="closeModal('modalRestoreSite')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <div class="modal-body">
+      <div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:10px;padding:12px 14px;font-size:12px;color:var(--warn);margin-bottom:4px">
+        ⚠ Текущие файлы сайта будут заменены. Текущая версия автоматически сохранится как .before_restore_ДАТА
+      </div>
+      <div class="form-row"><div class="form-label">Бэкап</div>
+        <select class="form-input">
+          <option>myproject.dev_2025-03-05_03-00.tar.gz</option>
+          <option>myproject.dev_2025-03-04_03-00.tar.gz</option>
+        </select>
+      </div>
+      <div class="form-row"><div class="form-label">Восстановить в домен</div>
+        <select class="form-input"><option>myproject.dev</option><option>shop.example.com</option></select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('modalRestoreSite')">Отмена</button>
+      <button class="btn btn-warn btn-sm">Восстановить</button>
+    </div>
+  </div>
+</div>
+
+<!-- Restore DB -->
+<div class="modal-overlay" id="modalRestoreDB">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-title">Восстановить базу данных</div><button class="modal-close" onclick="closeModal('modalRestoreDB')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <div class="modal-body">
+      <div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:10px;padding:12px 14px;font-size:12px;color:var(--danger)">
+        ⚠ Данные в выбранной БД будут перезаписаны из бэкапа.
+      </div>
+      <div class="form-row"><div class="form-label">Файл бэкапа</div>
+        <select class="form-input">
+          <option>shop_db_2025-03-05_03-30.sql.gz</option>
+          <option>shop_db_2025-03-04_03-30.sql.gz</option>
+        </select>
+      </div>
+      <div class="form-row"><div class="form-label">Восстановить в БД</div>
+        <select class="form-input"><option>shop_db</option><option>myproject_db</option></select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('modalRestoreDB')">Отмена</button>
+      <button class="btn btn-danger btn-sm">Восстановить</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Firewall Rule -->
+<div class="modal-overlay" id="modalAddFWRule">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-title">Добавить правило файервола</div><button class="modal-close" onclick="closeModal('modalAddFWRule')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-label">Действие</div>
+        <div style="display:flex;gap:8px">
+          <label class="cb-item"><input type="radio" id="fwActionAllow" name="fwAction" value="allow" checked> <span>ALLOW (разрешить)</span></label>
+          <label class="cb-item"><input type="radio" id="fwActionDeny" name="fwAction" value="deny"> <span>DENY (блокировать)</span></label>
+        </div>
+      </div>
+      <div class="form-row"><div class="form-label">Порт (или диапазон 80:443)</div><input type="text" id="fwPort" class="form-input" placeholder="8080"></div>
+      <div class="form-row">
+        <div class="form-label">Протокол</div>
+        <select id="fwProto" class="form-input"><option value="tcp">TCP</option><option value="udp">UDP</option><option value="any">Любой</option></select>
+      </div>
+      <div class="form-row"><div class="form-label">Откуда (IP или any)</div><input type="text" id="fwFrom" class="form-input" placeholder="any или 1.2.3.4/24" value="any"></div>
+      <div class="form-row"><div class="form-label">Комментарий</div><input type="text" id="fwComment" class="form-input" placeholder="Описание правила"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('modalAddFWRule')">Отмена</button>
+      <button class="btn btn-primary btn-sm" onclick="doAddFirewallRule()">Добавить</button>
+    </div>
+  </div>
+</div>
+
+<!-- Block IP -->
+<div class="modal-overlay" id="modalBlockIP">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-title">Заблокировать IP</div><button class="modal-close" onclick="closeModal('modalBlockIP')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <div class="modal-body">
+      <div class="form-row"><div class="form-label">IP адрес или CIDR</div><input type="text" class="form-input" placeholder="1.2.3.4 или 1.2.3.0/24"></div>
+      <div class="form-row"><div class="form-label">Комментарий (опционально)</div><input type="text" class="form-input" placeholder="Причина блокировки"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('modalBlockIP')">Отмена</button>
+      <button class="btn btn-danger btn-sm">Заблокировать</button>
+    </div>
+  </div>
+</div>
+
+<!-- Unblock IP -->
+<div class="modal-overlay" id="modalUnblockIP">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-title">Разблокировать IP</div><button class="modal-close" onclick="closeModal('modalUnblockIP')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <div class="modal-body">
+      <div style="font-size:13px;color:var(--muted)">Разблокировать IP <strong style="color:var(--text)">91.108.4.1</strong>?</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('modalUnblockIP')">Отмена</button>
+      <button class="btn btn-primary btn-sm">Разблокировать</button>
+    </div>
+  </div>
+</div>
+<!-- Upload SQL Dump -->
+<div class="modal-overlay" id="modalUploadSQL">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title">Загрузить SQL дамп</div>
+      <button class="modal-close" onclick="closeModal('modalUploadSQL')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div style="background:rgba(0,119,255,.07);border:1px solid rgba(0,119,255,.2);border-radius:10px;padding:12px 14px;font-size:12px;color:var(--muted);margin-bottom:4px">
+        Поддерживаются файлы <strong style="color:var(--text)">.sql</strong> и <strong style="color:var(--text)">.sql.gz</strong> до 500 MB
+      </div>
+      <div class="form-row">
+        <div class="form-label">База данных для импорта</div>
+        <select class="form-input" id="sqlUploadDB">
+          <option value="">— выберите БД —</option>
+          <option>shop_db</option>
+          <option>myproject_db</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-label">SQL файл (.sql или .sql.gz)</div>
+        <div style="border:2px dashed var(--border2);border-radius:10px;padding:20px;text-align:center;cursor:pointer;transition:.15s"
+             id="sqlDropZone"
+             ondragover="event.preventDefault();this.style.borderColor='var(--accent)'"
+             ondragleave="this.style.borderColor='var(--border2)'"
+             ondrop="handleSqlDrop(event)"
+             onclick="document.getElementById('sqlFileInput').click()">
+          <div style="font-size:24px;margin-bottom:6px">📂</div>
+          <div style="font-size:13px;color:var(--text);font-weight:600">Нажмите или перетащите файл</div>
+          <div id="sqlFileName" style="font-size:11px;color:var(--muted);margin-top:4px">.sql / .sql.gz</div>
+          <input type="file" id="sqlFileInput" accept=".sql,.gz" style="display:none" onchange="onSqlFileSelect(this)">
+        </div>
+      </div>
+      <div id="sqlUploadProgress" style="display:none">
+        <div style="background:var(--border);border-radius:4px;overflow:hidden;margin-top:8px">
+          <div id="sqlProgressBar" style="height:4px;background:var(--accent);width:0%;transition:width .3s"></div>
+        </div>
+        <div id="sqlProgressText" style="font-size:11px;color:var(--muted);margin-top:4px;text-align:center">Загрузка...</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('modalUploadSQL')">Отмена</button>
+      <button class="btn btn-primary btn-sm" onclick="uploadSqlDump()">Импортировать</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+//  Новые JS функции
+// ══════════════════════════════════════════════
+
+// ── Скачать бэкап ──────────────────────────────
+function downloadBackup(file, type) {
+  const url = `/api/backup?action=download&file=${encodeURIComponent(file)}&type=${encodeURIComponent(type)}`;
+  // Создаём скрытую ссылку и кликаем
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = file;
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => a.remove(), 1000);
+  showToast('Скачивание началось...', 'ok');
+}
+
+// ── Upload SQL dump ───────────────────────────
+let _sqlFile = null;
+
+function onSqlFileSelect(input) {
+  _sqlFile = input.files[0];
+  if (_sqlFile) {
+    document.getElementById('sqlFileName').textContent = _sqlFile.name + ' (' + formatBytes(_sqlFile.size) + ')';
+    document.getElementById('sqlDropZone').style.borderColor = 'var(--accent)';
+  }
+}
+
+function handleSqlDrop(e) {
+  e.preventDefault();
+  document.getElementById('sqlDropZone').style.borderColor = 'var(--border2)';
+  const f = e.dataTransfer.files[0];
+  if (f) {
+    _sqlFile = f;
+    document.getElementById('sqlFileName').textContent = f.name + ' (' + formatBytes(f.size) + ')';
+    document.getElementById('sqlDropZone').style.borderColor = 'var(--accent)';
+  }
+}
+
+function formatBytes(b) {
+  if (b > 1073741824) return (b/1073741824).toFixed(2) + ' GB';
+  if (b > 1048576)    return (b/1048576).toFixed(2) + ' MB';
+  return Math.round(b/1024) + ' KB';
+}
+
+function uploadSqlDump() {
+  const db = document.getElementById('sqlUploadDB').value;
+  if (!db) { showToast('Выберите базу данных', 'error'); return; }
+  if (!_sqlFile) { showToast('Выберите SQL файл', 'error'); return; }
+
+  const ext = _sqlFile.name.split('.').pop().toLowerCase();
+  if (!['sql','gz'].includes(ext)) { showToast('Допустимы только .sql и .sql.gz', 'error'); return; }
+
+  const fd = new FormData();
+  fd.append('db', db);
+  fd.append('sqlfile', _sqlFile);
+
+  const prog = document.getElementById('sqlUploadProgress');
+  const bar  = document.getElementById('sqlProgressBar');
+  const txt  = document.getElementById('sqlProgressText');
+  prog.style.display = 'block';
+
+  const xhr = new XMLHttpRequest();
+  xhr.upload.onprogress = (e) => {
+    if (e.lengthComputable) {
+      const pct = Math.round(e.loaded / e.total * 100);
+      bar.style.width = pct + '%';
+      txt.textContent = `Загрузка: ${pct}% (${formatBytes(e.loaded)} / ${formatBytes(e.total)})`;
+    }
+  };
+  xhr.onload = () => {
+    prog.style.display = 'none';
+    try {
+      const r = JSON.parse(xhr.responseText);
+      if (r.success) {
+        showToast('Дамп успешно импортирован в ' + db, 'ok');
+        closeModal('modalUploadSQL');
+        _sqlFile = null;
+      } else {
+        showToast(r.error || 'Ошибка импорта', 'error');
+      }
+    } catch(e) { showToast('Ошибка сервера', 'error'); }
+  };
+  xhr.onerror = () => { prog.style.display = 'none'; showToast('Ошибка сети', 'error'); };
+
+  xhr.open('POST', '/api/backup?action=upload_sql');
+  xhr.setRequestHeader('X-CSRF-Token', window._csrf || '');
+  xhr.send(fd);
+}
+
+// ── PHPMyAdmin ────────────────────────────────
+async function loadPmaInfo() {
+  try {
+    const r = await fetch('/api/extras?action=info');
+    const d = await r.json();
+    if (!d.success) return;
+    const port = location.port ? ':' + location.port : '';
+    const base = `${location.protocol}//${location.hostname}${port}`;
+
+    // ── PHPMyAdmin ──
+    const pmaToken = d.data.pma_token;
+    const pmaUrl = pmaToken ? `${base}/${pmaToken}/` : null;
+    const pmaEl = document.getElementById('pmaUrl');
+    const pmaSt = document.getElementById('pmaStatus');
+    if (pmaEl) pmaEl.textContent = pmaUrl || 'Не настроен';
+    if (pmaSt) {
+      pmaSt.textContent = d.data.pma_available ? 'Установлен' : 'Не установлен';
+      pmaSt.className = d.data.pma_available ? 'badge badge-green' : 'badge badge-danger';
+    }
+    window._pmaUrl = pmaUrl;
+    const pmaFrame = document.getElementById('pmaFrame');
+    if (pmaFrame) {
+      if (d.data.pma_available && pmaUrl) {
+        pmaFrame.src = pmaUrl;
+      } else {
+        pmaFrame.srcdoc = '<div style="padding:40px;text-align:center;font-family:sans-serif;color:#888"><h3>PHPMyAdmin не установлен</h3><p>Установите в /opt/adelpanel/extras/phpmyadmin/</p></div>';
+      }
+    }
+
+    // ── FileGator ──
+    const fgToken = d.data.fg_token;
+    const fgUrl = fgToken ? `${base}/${fgToken}/` : null;
+    const fmUrlEl = document.getElementById('fmUrl');
+    const fmSt = document.getElementById('fmStatus');
+    if (fmUrlEl) fmUrlEl.textContent = fgUrl || '/extras/filegator/';
+    window._fgUrl = fgUrl;
+    const fmFrame = document.getElementById('fmFrame');
+    if (fmFrame) {
+      if (d.data.fg_available && fgUrl) {
+        fmFrame.src = fgUrl;
+      } else if (d.data.fg_available) {
+        fmFrame.src = '/extras/filegator/index.php';
+      } else {
+        if (fmSt) { fmSt.textContent = 'Не установлен'; fmSt.className = 'badge badge-danger'; }
+        fmFrame.srcdoc = '<div style="padding:40px;text-align:center;font-family:sans-serif;color:#888"><h3>FileGator не установлен</h3></div>';
+      }
+    }
+  } catch(e) {}
+}
+
+function openPma() {
+  if (window._pmaUrl) window.open(window._pmaUrl, '_blank');
+}
+
+function copyPmaUrl() {
+  const url = document.getElementById('pmaUrl')?.textContent;
+  if (url && url !== 'Загружается...') {
+    navigator.clipboard.writeText(url).then(() => showToast('URL скопирован', 'ok'));
+  }
+}
+
+function openFmFull() {
+  window.open(window._fgUrl || '/extras/filegator/index.php', '_blank');
+}
+
+function reloadFm() {
+  const f = document.getElementById('fmFrame');
+  if (window._fgUrl) { f.src = window._fgUrl; return; }
+  if (f) f.src = f.src;
+}
+
+// ══════════════════════════════════════════════
+//  УНИВЕРСАЛЬНЫЙ API ХЕЛПЕР
+// ══════════════════════════════════════════════
+async function apiPost(url, data) {
+  const token = window._csrf || document.querySelector('meta[name="csrf-token"]')?.content || '';
+  const r = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': token },
+    body: JSON.stringify(data)
+  });
+  return r.json();
+}
+async function apiGet(url) {
+  const r = await fetch(url);
+  return r.json();
+}
+
+// ══════════════════════════════════════════════
+//  САЙТЫ
+// ══════════════════════════════════════════════
+async function doCreateSite() {
+  const domain  = document.getElementById('newSiteDomain')?.value?.trim();
+  const webroot = document.getElementById('newSiteWebroot')?.value?.trim();
+  const php     = document.getElementById('newSitePhp')?.value || '8.2';
+  const engine  = document.getElementById('selectedEngine')?.value || 'php';
+  const ssl     = document.getElementById('newSiteSsl')?.checked ? 1 : 0;
+
+  if (!domain) { showToast('Укажите домен', 'error'); return; }
+
+  showToast('Создаём сайт ' + domain + '...', 'info');
+  const res = await apiPost('/api/sites?action=create', {
+    domain, webroot: webroot || '', php, engine, ssl
+  });
+  if (res.success) {
+    showToast('Сайт ' + domain + ' создан', 'ok');
+    closeModal('modalAddSite');
+    loadSites();
+  } else {
+    showToast(res.error || 'Ошибка создания сайта', 'error');
+  }
+}
+
+async function doDeleteSite(domain) {
+  const confirm = document.getElementById('deleteSiteConfirm')?.value?.trim();
+  const delFiles = document.getElementById('deleteSiteFiles')?.checked;
+  if (confirm !== domain) { showToast('Подтверждение не совпадает', 'error'); return; }
+  const res = await apiPost('/api/sites?action=delete', { domain, confirm, delete_files: delFiles });
+  if (res.success) { showToast('Сайт удалён', 'ok'); closeModal('modalDeleteSite'); loadSites(); }
+  else showToast(res.error || 'Ошибка', 'error');
+}
+
+// ══════════════════════════════════════════════
+//  БАЗЫ ДАННЫХ
+// ══════════════════════════════════════════════
+async function doDeleteDB() {
+  const name    = document.getElementById('deleteDBNameInput')?.value?.trim();
+  const confirm = document.getElementById('deleteDBConfirm')?.value?.trim();
+  if (!name) { showToast('Ошибка: нет имени БД', 'error'); return; }
+  if (confirm !== name) { showToast('Подтверждение не совпадает', 'error'); return; }
+  const res = await apiPost('/api/databases?action=delete_db', { name, confirm });
+  if (res.success) { showToast('БД удалена', 'ok'); closeModal('modalDeleteDB'); loadDatabases(); }
+  else showToast(res.error || 'Ошибка', 'error');
+}
+
+async function doCreateDB() {
+  const name    = document.getElementById('newDbName')?.value?.trim();
+  const charset = document.getElementById('newDbCharset')?.value || 'utf8mb4';
+  if (!name) { showToast('Укажите название БД', 'error'); return; }
+  const res = await apiPost('/api/databases?action=create_db', { name, charset });
+  if (res.success) { showToast('БД ' + name + ' создана', 'ok'); closeModal('modalAddDB'); loadDatabases(); }
+  else showToast(res.error || 'Ошибка', 'error');
+}
+
+async function doCreateDBUser() {
+  const user = document.getElementById('newDbUser')?.value?.trim();
+  const pass = document.getElementById('newDbUserPass')?.value;
+  const host = document.getElementById('newDbUserHost')?.value || 'localhost';
+  if (!user || !pass) { showToast('Заполните все поля', 'error'); return; }
+  const res = await apiPost('/api/databases?action=create_user', { user, pass, host });
+  if (res.success) { showToast('Пользователь ' + user + ' создан', 'ok'); closeModal('modalAddDBUser'); loadDatabases(); }
+  else showToast(res.error || 'Ошибка', 'error');
+}
+
+async function doChangeDBPass() {
+  const user = document.getElementById('editDbUser')?.value?.trim();
+  const pass = document.getElementById('editDbPass')?.value;
+  const pass2 = document.getElementById('editDbPass2')?.value;
+  if (pass !== pass2) { showToast('Пароли не совпадают', 'error'); return; }
+  const res = await apiPost('/api/databases?action=change_pass', { user, host: 'localhost', pass });
+  if (res.success) { showToast('Пароль изменён', 'ok'); closeModal('modalChangeDBPass'); }
+  else showToast(res.error || 'Ошибка', 'error');
+}
+
+async function doAddUserToDB() {
+  const db   = document.getElementById('addUserToDBName')?.value?.trim();
+  const user = document.getElementById('addUserToDbUser')?.value?.trim();
+  const level = document.getElementById('quickPermsSelect')?.value || 'rw';
+  if (!db || !user) { showToast('Заполните поля', 'error'); return; }
+  const res = await apiPost('/api/databases?action=add_user_to_db', { db, user, host: 'localhost', level });
+  if (res.success) { showToast('Пользователь добавлен', 'ok'); closeModal('modalAddUserToDB'); loadDatabases(); }
+  else showToast(res.error || 'Ошибка', 'error');
+}
+
+// ══════════════════════════════════════════════
+//  FTP
+// ══════════════════════════════════════════════
+async function doCreateFTP() {
+  const user = document.getElementById('newFtpUser')?.value?.trim();
+  const pass = document.getElementById('newFtpPass')?.value;
+  const path = document.getElementById('ftpPathInput')?.value?.trim();
+  if (!user || !pass || !path) { showToast('Заполните все поля', 'error'); return; }
+  const res = await apiPost('/api/ftp?action=create', { user, pass, path });
+  if (res.success) { showToast('FTP пользователь создан', 'ok'); closeModal('modalAddFTP'); loadFtp(); }
+  else showToast(res.error || 'Ошибка', 'error');
+}
+
+async function doChangeFTPPass() {
+  const user  = document.getElementById('editFtpUser')?.value?.trim();
+  const pass  = document.getElementById('editFtpPass')?.value;
+  const pass2 = document.getElementById('editFtpPass2')?.value;
+  if (pass !== pass2) { showToast('Пароли не совпадают', 'error'); return; }
+  const res = await apiPost('/api/ftp?action=change_pass', { user, pass });
+  if (res.success) { showToast('Пароль изменён', 'ok'); closeModal('modalChangeFTPPass'); }
+  else showToast(res.error || 'Ошибка', 'error');
+}
+
+async function doSaveFTPPath() {
+  const user = document.getElementById('editFtpPathUser')?.value?.trim();
+  const path = document.getElementById('ftpPathInput2')?.value?.trim();
+  const res = await apiPost('/api/ftp?action=change_path', { user, path });
+  if (res.success) { showToast('Путь изменён', 'ok'); closeModal('modalEditFTPPath'); loadFtp(); }
+  else showToast(res.error || 'Ошибка', 'error');
+}
+
+async function doDeleteFTP(user) {
+  const res = await apiPost('/api/ftp?action=delete', { user });
+  if (res.success) { showToast('FTP пользователь удалён', 'ok'); closeModal('modalDeleteFTP'); loadFtp(); }
+  else showToast(res.error || 'Ошибка', 'error');
+}
+
+// ══════════════════════════════════════════════
+//  SSL
+// ══════════════════════════════════════════════
+async function doIssueSSL() {
+  const domain = document.getElementById('sslIssueDomain')?.value?.trim();
+  const email  = document.getElementById('sslIssueEmail')?.value?.trim();
+  if (!domain) { showToast('Укажите домен', 'error'); return; }
+  showToast('Выдаём SSL для ' + domain + '...', 'info');
+  const res = await apiPost('/api/ssl?action=issue', { domain, email });
+  if (res.success) { showToast('SSL выдан для ' + domain, 'ok'); closeModal('modalIssueSSL'); loadSsl(); }
+  else showToast(res.error || 'Ошибка', 'error');
+}
+
+async function doIssueSSLFromModal() {
+  const domain = document.getElementById('sslDomain')?.value?.trim();
+  const email  = document.getElementById('sslIssueEmail')?.value?.trim();
+  const type   = document.getElementById('sslType')?.value || 'letsencrypt';
+  if (!domain) { showToast('Нет домена', 'error'); return; }
+  showToast('Выдаём SSL для ' + domain + '...', 'info');
+  const action = type === 'selfsigned' ? 'selfsigned' : 'issue';
+  const res = await apiPost('/api/ssl?action=' + action, { domain, email });
+  if (res.success) { showToast('SSL выдан для ' + domain, 'ok'); closeModal('modalSSL'); loadSites(); }
+  else showToast(res.error || 'Ошибка', 'error');
+}
+
+async function doSiteHttpAuth() {
+  const domain  = document.getElementById('httpAuthDomain')?.value?.trim();
+  const enabled = document.getElementById('httpAuthToggle')?.checked;
+  const user    = document.getElementById('httpAuthUser')?.value?.trim();
+  const pass    = document.getElementById('httpAuthPass')?.value;
+  const realm   = document.getElementById('httpAuthRealm')?.value?.trim() || 'Restricted Area';
+  if (!domain) { showToast('Нет домена', 'error'); return; }
+  if (enabled && (!user || !pass)) { showToast('Укажите логин и пароль', 'error'); return; }
+  const res = await apiPost('/api/sites?action=httpauth', { domain, enabled: enabled ? 1 : 0, user, pass, realm });
+  if (res.success) { showToast(enabled ? 'HTTP Auth включён' : 'HTTP Auth отключён', 'ok'); closeModal('modalHTTPAuth'); loadSites(); }
+  else showToast(res.error || 'Ошибка', 'error');
+}
+
+async function doRenewSSL(domain) {
+  showToast('Обновляем SSL для ' + domain + '...', 'info');
+  const res = await apiPost('/api/ssl?action=renew', { domain });
+  if (res.success) { showToast('SSL обновлён', 'ok'); loadSsl(); }
+  else showToast(res.error || 'Ошибка', 'error');
+}
+
+async function doSelfSignedSSL() {
+  const domain = document.getElementById('sslSelfDomain')?.value?.trim();
+  if (!domain) { showToast('Укажите домен', 'error'); return; }
+  const res = await apiPost('/api/ssl?action=selfsigned', { domain });
+  if (res.success) { showToast('Самоподписный SSL создан', 'ok'); closeModal('modalSelfSSL'); loadSsl(); }
+  else showToast(res.error || 'Ошибка', 'error');
+}
+
+// ══════════════════════════════════════════════
+//  НАСТРОЙКИ
+// ══════════════════════════════════════════════
+async function doSaveHostname() {
+  const hostname = document.getElementById('settingHostname')?.value?.trim();
+  if (!hostname) return;
+  const res = await apiPost('/api/settings?action=set_hostname', { hostname });
+  showToast(res.success ? 'Hostname изменён' : (res.error || 'Ошибка'), res.success ? 'ok' : 'error');
+}
+
+async function doSaveTimezone() {
+  const timezone = document.getElementById('settingTimezone')?.value;
+  if (!timezone) return;
+  const res = await apiPost('/api/settings?action=set_timezone', { timezone });
+  showToast(res.success ? 'Часовой пояс изменён' : (res.error || 'Ошибка'), res.success ? 'ok' : 'error');
+}
+
+async function doSaveDns() {
+  const dns = document.getElementById('settingDns')?.value?.trim();
+  if (!dns) return;
+  const res = await apiPost('/api/settings?action=set_dns', { dns });
+  showToast(res.success ? 'DNS обновлён' : (res.error || 'Ошибка'), res.success ? 'ok' : 'error');
+}
+
+async function doSetSwap() {
+  const sel = document.getElementById('settingSwap');
+  const size_mb = sel ? parseInt(sel.value) : 1024;
+  const res = await apiPost('/api/settings?action=set_swap', { size_mb });
+  showToast(res.success ? 'Своп установлен' : (res.error || 'Ошибка'), res.success ? 'ok' : 'error');
+}
+
+async function doDisableSwap() {
+  if (!confirm('Отключить своп?')) return;
+  const res = await apiPost('/api/settings?action=disable_swap', {});
+  showToast(res.success ? 'Своп отключён' : (res.error || 'Ошибка'), res.success ? 'ok' : 'error');
+  if (res.success) loadSettings();
+}
+
+async function doChangePanelPass() {
+  const pass  = document.getElementById('settingNewPass')?.value;
+  const pass2 = document.getElementById('settingNewPass2')?.value;
+  if (!pass) { showToast('Введите пароль', 'error'); return; }
+  if (pass !== pass2) { showToast('Пароли не совпадают', 'error'); return; }
+  const res = await apiPost('/api/settings?action=set_panel_pass', { pass });
+  showToast(res.success ? 'Пароль изменён' : (res.error || 'Ошибка'), res.success ? 'ok' : 'error');
+  if (res.success) { document.getElementById('settingNewPass').value = ''; if(document.getElementById('settingNewPass2')) document.getElementById('settingNewPass2').value = ''; }
+}
+
+async function doChangePanelPort() {
+  const port = parseInt(document.getElementById('settingPort')?.value);
+  if (!port) return;
+  if (!confirm('Порт панели будет изменён на ' + port + '. Вы переподключитесь на новый порт.')) return;
+  const res = await apiPost('/api/settings?action=set_panel_port', { port });
+  if (res.success) { showToast('Порт изменён. Переподключитесь.', 'ok'); setTimeout(() => { window.location.port = port; }, 2000); }
+  else showToast(res.error || 'Ошибка', 'error');
+}
+
+async function runUpdate(component) {
+  if (!confirm(`Запустить обновление: ${component}? Это может занять несколько минут.`)) return;
+  showToast(`Обновление ${component}...`, 'info');
+  try {
+    const res = await apiPost('/api/settings?action=run_update', { component });
+    if (res.success) {
+      showToast('Обновление завершено', 'ok');
+    } else {
+      showToast(res.error || 'Ошибка обновления', 'error');
+    }
+  } catch(e) { showToast('Ошибка сети', 'error'); }
+}
+
+
+  // ── PHP MANAGEMENT (settings page) ──────────────────────────
+  async function loadPhpVersions() {
+    try {
+      const r = await fetch('/api/php_manager?action=list');
+      const d = await r.json();
+      const el = document.getElementById('phpVersionsList');
+      if (!el) return;
+      if (!d.success || !d.data?.length) {
+        el.innerHTML = '<div style="color:var(--muted);font-size:12px">Нет установленных версий PHP</div>';
+        return;
+      }
+      // Разделяем на установленные и доступные для установки
+      const installed = d.data.filter(v => v.installed);
+      const available = d.data.filter(v => !v.installed);
+      let html = '';
+      if (installed.length) {
+        installed.forEach(v => {
+          html += `<div class="php-version-row">
+            <div class="php-ver-num">PHP ${escHtml(v.version)}</div>
+            <span class="badge ${v.fpm_active ? 'badge-green' : 'badge-muted'}">${v.fpm_active ? 'Запущен' : 'Остановлен'}</span>
+            <span style="font-family:'Courier New',monospace;font-size:10px;color:${v.is_current ? 'var(--accent2)' : 'var(--muted)'};flex:1">
+              ${v.fpm_status}${v.is_current ? ' ★ панель' : ''}
+            </span>
+            <div class="row-actions">
+              <button class="btn btn-warn btn-xs" onclick="restartPhp('${escHtml(v.version)}')">Перезапустить</button>
+              ${!v.is_current ? `<button class="btn btn-danger btn-xs" onclick="removePhp('${escHtml(v.version)}')">Удалить</button>` : ''}
+            </div>
+          </div>`;
+        });
+      }
+      if (available.length) {
+        html += `<div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-size:11px;color:var(--muted);margin-bottom:6px">Доступны для установки:</div>`;
+        html += `<div style="display:flex;flex-wrap:wrap;gap:6px">` +
+          available.map(v => `<button class="btn btn-ghost btn-xs" onclick="doInstallPhp('${escHtml(v.version)}')">+ PHP ${escHtml(v.version)}</button>`).join('') +
+          `</div>`;
+      }
+      el.innerHTML = html || '<div style="color:var(--muted);font-size:12px">Нет данных</div>';
+    } catch(e) {}
+  }
+
+  async function doInstallPhp(ver) {
+    if (!ver) ver = document.getElementById('phpInstallVer')?.value;
+    if (!ver) return;
+    if (!confirm(`Установить PHP ${ver}? Это займёт ~2-3 минуты.`)) return;
+    showToast(`Устанавливаем PHP ${ver}...`, 'info');
+    try {
+      const res = await apiPost('/api/php_manager?action=install', { version: ver });
+      if (res.success) { showToast(`PHP ${ver} установлен`, 'ok'); loadPhpVersions(); }
+      else showToast(res.error || 'Ошибка', 'error');
+    } catch(e) { showToast('Ошибка сети', 'error'); }
+  }
+
+  async function restartPhp(ver) {
+    const res = await apiPost('/api/php_manager?action=restart', { version: ver });
+    showToast(res.success ? `php${ver}-fpm перезапущен` : (res.error||'Ошибка'), res.success?'ok':'error');
+  }
+
+  async function removePhp(ver) {
+    if (!confirm(`Удалить PHP ${ver}?`)) return;
+    const res = await apiPost('/api/php_manager?action=remove', { version: ver });
+    if (res.success) { showToast(`PHP ${ver} удалён`, 'ok'); loadPhpVersions(); }
+    else showToast(res.error||'Ошибка', 'error');
+  }
+
+  // ── BACKUP MODALS ────────────────────────────────────────────
+  async function openBackupSiteModal() {
+    openModal('modalBackupSite');
+    const sel = document.getElementById('backupSiteSelect');
+    const btn = document.getElementById('backupSiteBtn');
+    if (sel) {
+      sel.innerHTML = '<option value="">Загрузка сайтов...</option>';
+      if (btn) btn.disabled = true;
+      try {
+        const r = await fetch('/api/sites?action=list');
+        const d = await r.json();
+        if (d.success && d.data?.length) {
+          sel.innerHTML = d.data.map((s,i) => `<option value="${escHtml(s.domain)}" ${i===0?'selected':''}>${escHtml(s.domain)}</option>`).join('');
+        } else {
+          sel.innerHTML = '<option value="">Нет сайтов</option>';
+        }
+      } catch(e) { sel.innerHTML = '<option value="">Ошибка загрузки</option>'; }
+      if (btn) btn.disabled = false;
+    }
+  }
+
+  async function openBackupDbModal() {
+    openModal('modalBackupDB');
+    const sel = document.getElementById('backupDbSelect');
+    const btn = document.getElementById('backupDbBtn');
+    if (sel) {
+      sel.innerHTML = '<option value="">Загрузка баз...</option>';
+      if (btn) btn.disabled = true;
+      try {
+        const r = await fetch('/api/databases?action=list');
+        const d = await r.json();
+        if (d.success && d.data?.databases?.length) {
+          sel.innerHTML = d.data.databases.map((db,i) => `<option value="${escHtml(db.name)}" ${i===0?'selected':''}>${escHtml(db.name)}</option>`).join('');
+        } else {
+          sel.innerHTML = '<option value="">Нет баз данных</option>';
+        }
+      } catch(e) { sel.innerHTML = '<option value="">Ошибка загрузки</option>'; }
+      if (btn) btn.disabled = false;
+    }
+  }
+
+  async function doBackupSite() {
+    const sel = document.getElementById('backupSiteSelect');
+    const domain = sel?.value?.trim();
+    if (!domain) { return showToast('Выберите сайт из списка', 'error'); }
+    showToast(`Создаём бэкап ${domain}...`, 'info');
+    const res = await apiPost('/api/backup?action=create_site', { domain });
+    if (res.success) { showToast('Бэкап создан', 'ok'); closeModal('modalBackupSite'); loadBackups(); }
+    else showToast(res.error || 'Ошибка', 'error');
+  }
+
+  async function doBackupDb() {
+    const db = document.getElementById('backupDbSelect')?.value;
+    if (!db) return showToast('Выберите базу', 'error');
+    showToast(`Создаём бэкап ${db}...`, 'info');
+    const res = await apiPost('/api/backup?action=create_db', { db });
+    if (res.success) { showToast('Бэкап БД создан', 'ok'); closeModal('modalBackupDB'); loadBackups(); }
+    else showToast(res.error || 'Ошибка', 'error');
+  }
+
+async function doReboot() {
+  if (!confirm('Перезагрузить сервер? Панель будет недоступна ~1 минуту.')) return;
+  const res = await apiPost('/api/settings?action=reboot', { confirm: 'reboot' });
+  showToast(res.success ? 'Сервер перезагружается...' : (res.error || 'Ошибка'), res.success ? 'ok' : 'error');
+}
+
+// ══════════════════════════════════════════════
+//  ФАЙЕРВОЛ
+// ══════════════════════════════════════════════
+async function doAddFirewallRule() {
+  const port    = document.getElementById('fwPort')?.value?.trim();
+  const proto   = document.getElementById('fwProto')?.value || 'tcp';
+  const action  = document.querySelector('input[name="fwAction"]:checked')?.value || 'allow';
+  const from    = document.getElementById('fwFrom')?.value?.trim() || 'any';
+  const comment = document.getElementById('fwComment')?.value?.trim();
+  if (!port) { showToast('Укажите порт', 'error'); return; }
+  const res = await apiPost('/api/firewall?action=add_port', { port, proto, action, from, comment });
+  if (res.success) { showToast('Правило добавлено', 'ok'); closeModal('modalAddFWRule'); loadFirewall(); }
+  else showToast(res.error || 'Ошибка', 'error');
+}
+
+async function doDeleteFWRule(num) {
+  if (!confirm('Удалить правило #' + num + '?')) return;
+  const res = await apiPost('/api/firewall?action=delete_rule', { num });
+  if (res.success) { showToast('Правило удалено', 'ok'); loadFirewall(); }
+  else showToast(res.error || 'Ошибка', 'error');
+}
+
+async function doBlockIP() {
+  const ip = document.getElementById('fwBlockIp')?.value?.trim();
+  if (!ip) { showToast('Укажите IP', 'error'); return; }
+  const res = await apiPost('/api/firewall?action=block_ip', { ip });
+  if (res.success) { showToast('IP ' + ip + ' заблокирован', 'ok'); closeModal('modalBlockIP'); loadFirewall(); }
+  else showToast(res.error || 'Ошибка', 'error');
+}
+
+async function doUnblockIP(ip) {
+  const res = await apiPost('/api/firewall?action=unblock_ip', { ip });
+  if (res.success) { showToast('IP ' + ip + ' разблокирован', 'ok'); loadFirewall(); }
+  else showToast(res.error || 'Ошибка', 'error');
+}
+
+// ══════════════════════════════════════════════
+//  БЭКАПЫ
+// ══════════════════════════════════════════════
+
+
+// ══════════════════════════════════════════════
+//  ВЫХОД
+// ══════════════════════════════════════════════
+async function doLogout() {
+  window.location.reload();
+}
+
+</script>
+
+</body>
+</html>
