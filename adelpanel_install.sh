@@ -268,57 +268,33 @@ hdr "5/18 Pure-FTPd"
 apt-get install -y -qq pure-ftpd pure-ftpd-common || warn "Pure-FTPd не установлен"
 if command -v pure-ftpd &>/dev/null; then
     mkdir -p /etc/pure-ftpd/conf
+    mkdir -p /etc/ssl/private
+    
+    # Настройки через файлы
     echo "yes" > /etc/pure-ftpd/conf/BrokenClientsCompatibility
     echo "30" > /etc/pure-ftpd/conf/MaxIdleTime
     echo "no" > /etc/pure-ftpd/conf/PAMAuthentication
     echo "yes" > /etc/pure-ftpd/conf/NoAnonymous
     echo "1000" > /etc/pure-ftpd/conf/MinUID
-    echo "no" > /etc/pure-ftpd/conf/PAMAuthentication
     echo "1" > /etc/pure-ftpd/conf/TLS
     echo "no" > /etc/pure-ftpd/conf/UnixAuthentication
     echo "35000 50000" > /etc/pure-ftpd/conf/PassivePortRange
-    useradd -r -s /bin/false -d /dev/null ftpuser 2>/dev/null || true
-    openssl req -x509 -nodes -newkey rsa:2048 -keyout /etc/ssl/private/pure-ftpd.pem -out pure-ftpd.pem -days 365
-    openssl dhparam -out /etc/ssl/private/pure-ftpd-dhparams.pem 3072
-    openssl req -x509 -nodes -newkey rsa:2048 -keyout /etc/ssl/private/pure-ftpd.pem -out /etc/ssl/private/pure-ftpd.pem -days 365
-    ln -s /etc/pure-ftpd/conf/PureDB /etc/pure-ftpd/auth/50pure
-    echo "ChrootEveryone               yes" > /etc/pure-ftpd/pure-ftpd.conf
-    echo "BrokenClientsCompatibility   no" >> /etc/pure-ftpd/pure-ftpd.conf
-    echo "MaxClientsNumber             50" >> /etc/pure-ftpd/pure-ftpd.conf
-    echo "Daemonize                    yes" >> /etc/pure-ftpd/pure-ftpd.conf
-    echo "MaxClientsPerIP              8" >> /etc/pure-ftpd/pure-ftpd.conf
-    echo "VerboseLog                   no" >> /etc/pure-ftpd/pure-ftpd.conf
-    echo "DisplayDotFiles              yes" >> /etc/pure-ftpd/pure-ftpd.conf
-    echo "AnonymousOnly                no" >> /etc/pure-ftpd/pure-ftpd.conf
-    echo "NoAnonymous                  no" >> /etc/pure-ftpd/pure-ftpd.conf
-    echo "SyslogFacility               ftp" >> /etc/pure-ftpd/pure-ftpd.conf
-    echo "DontResolve                  yes" >> /etc/pure-ftpd/pure-ftpd.conf
-    echo "MaxIdleTime                  15" >> /etc/pure-ftpd/pure-ftpd.conf
-    echo "PureDB                       /etc/pureftpd.pdb" >> /etc/pure-ftpd/pure-ftpd.conf
-    echo "LimitRecursion               10000 8" >> /etc/pure-ftpd/pure-ftpd.conf
-    echo "AnonymousCanCreateDirs       no" >> /etc/pure-ftpd/pure-ftpd.conf
-    echo "MaxLoad                      4" >> /etc/pure-ftpd/pure-ftpd.conf
-    echo "PassivePortRange             35000 50000" >> /etc/pure-ftpd/pure-ftpd.conf
-    echo "AntiWarez                    yes" >> /etc/pure-ftpd/pure-ftpd.conf
-    echo "Umask                        133:022" >> /etc/pure-ftpd/pure-ftpd.conf
-    echo "MinUID                       100" >> /etc/pure-ftpd/pure-ftpd.conf
-    echo "AllowUserFXP                 no" >> /etc/pure-ftpd/pure-ftpd.conf
-    echo "AllowAnonymousFXP            no" >> /etc/pure-ftpd/pure-ftpd.conf
-    echo "ProhibitDotFilesWrite        no" >> /etc/pure-ftpd/pure-ftpd.conf
-    echo "ProhibitDotFilesRead         no" >> /etc/pure-ftpd/pure-ftpd.conf
-    echo "AutoRename                   no" >> /etc/pure-ftpd/pure-ftpd.conf
-    echo "AnonymousCantUpload          no" >> /etc/pure-ftpd/pure-ftpd.conf
-    echo "MaxDiskUsage                   99" >> /etc/pure-ftpd/pure-ftpd.conf
-    echo "CustomerProof                yes" >> /etc/pure-ftpd/pure-ftpd.conf
-    echo "TLS                          1" >> /etc/pure-ftpd/pure-ftpd.conf
-    echo "CertFile                     /etc/pure-ftpd/pure-ftpd.pem" >> /etc/pure-ftpd/pure-ftpd.conf
-    echo "CertFileAndKey               /etc/pure-ftpd/pure-ftpd.pem" >> /etc/pure-ftpd/pure-ftpd.conf
+
+    # Генерируем SSL БЕЗ ВОПРОСОВ
+    openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+      -keyout /etc/ssl/private/pure-ftpd.pem \
+      -out /etc/ssl/private/pure-ftpd.pem \
+      -subj "/C=UA/O=AdelPanel/CN=adelpanel.net" &>/dev/null
+    
+    chmod 600 /etc/ssl/private/pure-ftpd.pem
+
+    # Создаем БД пользователей
     touch /etc/pure-ftpd/pureftpd.passwd
-    pure-pw mkdb /etc/pure-ftpd/pureftpd.pdb \
-        -f /etc/pure-ftpd/pureftpd.passwd 2>/dev/null || true
-    systemctl enable pure-ftpd 2>/dev/null || true
-    systemctl start  pure-ftpd 2>/dev/null || true
-    ok "Pure-FTPd"
+    pure-pw mkdb /etc/pure-ftpd/pureftpd.pdb -f /etc/pure-ftpd/pureftpd.passwd &>/dev/null
+    
+    systemctl enable pure-ftpd &>/dev/null
+    systemctl restart pure-ftpd &>/dev/null
+    ok "Pure-FTPd настроен"
 fi
 
 # ── 6. acme.sh ────────────────────────────────────────────────────
