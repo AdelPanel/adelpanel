@@ -908,7 +908,7 @@
         </button>
       </div>
       <div class="install-cmd">
-        <span class="cmd-dollar">$</span>curl -sSL https://raw.githubusercontent.com/adelpanel/adelpanel/release/install/adelpanel_install.sh | bash
+        <span class="cmd-dollar">$</span>curl -sSL https://raw.githubusercontent.com/adelpanel/adelpanel/main/adelpanel_install.sh | bash
       </div>
     </div>
 
@@ -942,7 +942,7 @@
 
   // Copy install command
   function copyInstall(btn) {
-    const cmd = 'curl -sSL https://raw.githubusercontent.com/adelpanel/adelpanel/release/install/adelpanel_install.sh | bash';
+    const cmd = 'curl -sSL https://raw.githubusercontent.com/adelpanel/adelpanel/main/adelpanel_install.sh | bash';
     navigator.clipboard.writeText(cmd).then(() => {
       btn.classList.add('copied');
       btn.innerHTML = '<svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 18 4 13"/></svg> Скопировано!';
