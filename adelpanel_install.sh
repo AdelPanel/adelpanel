@@ -853,9 +853,20 @@ if wget -q --timeout=60 "${PMA_URL}" -O /tmp/pma.tar.gz 2>/dev/null \
     tar -xzf /tmp/pma.tar.gz -C "$PMA_DIR" --strip-components=1 2>/dev/null
     PMA_BLOWFISH="$(rand_str 32 'A-Za-z0-9!@#%^&*')"
     if [ -f "$PMA_DIR/config.sample.inc.php" ]; then
-        cp "$PMA_DIR/config.sample.inc.php" "$PMA_DIR/config.inc.php"
-        sed -i "s|cfg\['blowfish_secret'\] = ''|cfg['blowfish_secret'] = '${PMA_BLOWFISH}'|" \
-            "$PMA_DIR/config.inc.php"
+        mv "$PMA_DIR/config.sample.inc.php" "$PMA_DIR/config.inc.php"
+        cat <<EOF > /usr/share/phpmyadmin/config.inc.php
+<?php
+declare(strict_types=1);
+\$cfg['blowfish_secret'] = '${PMA_BLOWFISH}'; /* YOU MUST FILL IN THIS FOR COOKIE AUTH! */
+\$i = 0;
+\$i++;
+\$cfg['Servers'][\$i]['auth_type'] = 'cookie';
+\$cfg['Servers'][\$i]['host'] = 'localhost';
+\$cfg['Servers'][\$i]['compress'] = false;
+\$cfg['Servers'][\$i]['AllowNoPassword'] = false;
+\$cfg['UploadDir'] = '';
+\$cfg['SaveDir'] = '';
+EOF
     fi
     mkdir -p "$PMA_DIR/tmp"
     ok "PHPMyAdmin ${PMA_VER} → /${PMA_TOKEN}/"
@@ -903,18 +914,19 @@ sudo -u adelpanel composer update
 sed -i "s|__DIR__.'/repository'|realpath('/var/www')|g" /opt/adelpanel/extras/filegator/configuration.php
 FG_PASS_HASH=$(php -r "echo password_hash('$FG_PASS', PASSWORD_DEFAULT);")
 FG_FILE_SEC="/opt/adelpanel/extras/filegator/private/users.json"
-jq "del(.\"2\") | . + {\"2\": {
+echo "{}" > "$FG_FILE_SEC"
+jq "del(.\"2\") | . + {\"1\": {
   \"username\": \$user,
   \"name\": \$user,
   \"role\": \"admin\",
   \"homedir\": \"/\",
   \"permissions\": \"read|write|upload|download|batchdownload|zip|chmod\",
   \"password\": \$hash
-}}" --arg user "$FG_USER" --arg hash "$FG_PASS_HASH" "$FG_FILE_SEC" > "${FG_FILE_SEC}.tmp" && mv "${FG_FILE_SEC}.tmp" "$FG_FILE_SEC"
+},\"2\": {\"username\":\"guest\",\"name\":\"Guest\",\"role\":\"guest\",\"homedir\":\"\/\",\"permissions\":\"\",\"password\":\"\"}}" --arg user "$FG_USER" --arg hash "$FG_PASS_HASH" "$FG_FILE_SEC" > "${FG_FILE_SEC}.tmp" && mv "${FG_FILE_SEC}.tmp" "$FG_FILE_SEC"
 
 cd /root/
-chown -R adelpanel:adelpanel "${PANEL_DIR}/extras" 2>/dev/null || true
-
+chown -R adelpanel:adelpanel "${PANEL_DIR}" 2>/dev/null || true
+mkdir -p /var/www
 chown -R adelpanel:adelpanel /var/www 2>/dev/null || true
 
 
@@ -963,13 +975,14 @@ echo "  ║  СОХРАНИТЕ ДАННЫЕ — ОНИ НИГДЕ БОЛЬШЕ 
 echo "  ╚══════════════════════════════════════════════════════════╝"
 echo -e "${NC}"
 echo -e "  ${BOLD}Панель:${NC}       ${CYAN}https://${SERVER_IP}:${PANEL_PORT}${NC}  ${YELLOW}(самоподписный SSL — подтвердите в браузере)${NC}"
-echo -e "  ${BOLD}Логин:${NC}        ${YELLOW}${PANEL_USER}${NC}"
+echo -e "  ${BOLD}Логин :${NC}        ${YELLOW}${PANEL_USER}${NC}"
 echo -e "  ${BOLD}Пароль:${NC}       ${YELLOW}${PANEL_PASS}${NC}"
 echo ""
 echo -e "  ${BOLD}PHPMyAdmin:${NC}   ${CYAN}https://${SERVER_IP}:${PANEL_PORT}/${PMA_TOKEN}/${NC}"
+echo ""
 echo -e "  ${BOLD}Файловый менеджер:${NC}    ${CYAN}https://${SERVER_IP}:${PANEL_PORT}/${FG_TOKEN}/${NC}"
-echo -e "      ${BOLD}Логин:${NC}        ${YELLOW}${FG_USER}${NC}"
-echo -e "      ${BOLD}Пароль:${NC}       ${YELLOW}${FG_PASS}${NC}"
+echo -e "  ${BOLD}╚═ Логин :${NC}        ${YELLOW}${FG_USER}${NC}"
+echo -e "  ${BOLD}╚═ Пароль:${NC}       ${YELLOW}${FG_PASS}${NC}"
 echo ""
 echo -e "  ${BOLD}MySQL root:${NC}   ${YELLOW}${MYSQL_ROOT_PASS}${NC}"
 echo -e "               ${RED}(конфиг: /root/.adelpanel/mysql.conf)${NC}"

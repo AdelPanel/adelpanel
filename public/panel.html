@@ -1793,9 +1793,8 @@
   document.getElementById('authPass').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
 
 async function logout() {
-    if (_notifTimer) clearInterval(_notifTimer);
-    if (_logsRefreshTimer) clearInterval(_logsRefreshTimer);
-
+    if (typeof _notifTimer !== 'undefined') clearInterval(_notifTimer);
+    if (typeof _logsRefreshTimer !== 'undefined') clearInterval(_logsRefreshTimer);
     try {
         const r = await fetch('/api/auth?action=logout'); 
         const d = await r.json();
@@ -1804,7 +1803,6 @@ async function logout() {
             window.location.href = '/login'; 
         }
     } catch(e) {
-        // Если API упало, всё равно выкидываем на главную
         window.location.href = '/';
     }
 }
