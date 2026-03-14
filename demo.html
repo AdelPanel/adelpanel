@@ -1,0 +1,1609 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AdelPanel</title>
+<link href="adelpanel.ico" rel="shortcut icon">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:       #0d0f11;
+    --surface:  #141618;
+    --surface2: #191c1f;
+    --border:   #1f2225;
+    --border2:  #2a2d32;
+    --text:     #e8eaed;
+    --muted:    #6b7280;
+    --accent:   #00e5a0;
+    --accent2:  #0077ff;
+    --warn:     #f59e0b;
+    --danger:   #ef4444;
+    --green:    #22c55e;
+    --purple:   #a855f7;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    overflow: hidden;
+  }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    width: 220px;
+    min-height: 100vh;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    position: relative;
+  }
+  .sidebar::after {
+    content: '';
+    position: absolute;
+    top: 0; right: 0;
+    width: 1px; height: 100%;
+    background: linear-gradient(to bottom, transparent, var(--accent) 40%, transparent);
+    opacity: .2;
+  }
+  .logo {
+    padding: 20px 20px 18px;
+    border-bottom: 1px solid var(--border);
+  }
+  .logo-mark { display: flex; align-items: center; gap: 10px; }
+  .logo-icon {
+    height: 36px;
+    background: linear-gradient(135deg, var(--accent), #00b377);
+    border-radius: 8px;
+    display: grid; place-items: center;
+    flex-shrink: 0;
+  }
+  .logo-icon svg { width: 18px; height: 18px; color: #000; }
+  .logo-name { font-size: 15px; font-weight: 800; color: var(--text); }
+  .logo-tag { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--muted); margin-top: 2px; }
+
+  .nav { padding: 14px 12px; flex: 1; overflow-y: auto; }
+  .nav-section { margin-bottom: 22px; }
+  .nav-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; letter-spacing: 1.2px; color: var(--muted);
+    text-transform: uppercase; padding: 0 8px; margin-bottom: 5px;
+  }
+  .nav-item {
+    display: flex; align-items: center; gap: 9px;
+    padding: 8px 10px; border-radius: 8px;
+    cursor: pointer; font-size: 13px; font-weight: 600;
+    color: var(--muted); transition: all .15s;
+    position: relative; text-decoration: none;
+    user-select: none;
+  }
+  .nav-item:hover { color: var(--text); background: var(--border); }
+  .nav-item.active { color: var(--accent); background: rgba(0,229,160,.07); }
+  .nav-item.active::before {
+    content: '';
+    position: absolute; left: -12px; top: 50%; transform: translateY(-50%);
+    width: 3px; height: 16px; border-radius: 2px;
+    background: var(--accent);
+  }
+  .nav-item svg { width: 15px; height: 15px; flex-shrink: 0; }
+  .nav-badge {
+    margin-left: auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; font-weight: 600;
+    background: rgba(0,229,160,.15); color: var(--accent);
+    padding: 1px 6px; border-radius: 20px;
+  }
+
+  .server-info {
+    padding: 12px 18px;
+    border-top: 1px solid var(--border);
+    display: flex; align-items: center; gap: 9px;
+  }
+  .server-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--green); box-shadow: 0 0 6px var(--green);
+    animation: pulse 2s infinite; flex-shrink: 0;
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+  .server-text { font-family:'JetBrains Mono',monospace; font-size: 10px; color: var(--muted); line-height: 1.5; }
+  .server-text strong { color: var(--text); font-size: 11px; }
+
+  /* ── MAIN ── */
+  .main { flex: 1; display: flex; flex-direction: column; overflow-y: auto; min-height: 100vh; }
+
+  .topbar {
+    padding: 16px 28px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--bg); position: sticky; top: 0; z-index: 10;
+  }
+  .page-title { font-size: 18px; font-weight: 800; }
+  .page-sub { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--muted); margin-top: 2px; }
+  .topbar-actions { display: flex; align-items: center; gap: 10px; }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 7px 14px; border-radius: 8px; font-size: 12.5px;
+    font-weight: 700; font-family: 'Syne', sans-serif;
+    cursor: pointer; border: none; transition: all .15s;
+  }
+  .btn svg { width: 13px; height: 13px; flex-shrink: 0; }
+  .btn-primary { background: var(--accent); color: #000; }
+  .btn-primary:hover { background: #00ffb3; transform: translateY(-1px); }
+  .btn-danger { background: rgba(239,68,68,.12); color: var(--danger); border: 1px solid rgba(239,68,68,.2); }
+  .btn-danger:hover { background: rgba(239,68,68,.2); }
+  .btn-warn { background: rgba(245,158,11,.12); color: var(--warn); border: 1px solid rgba(245,158,11,.2); }
+  .btn-warn:hover { background: rgba(245,158,11,.2); }
+  .btn-blue { background: rgba(0,119,255,.12); color: var(--accent2); border: 1px solid rgba(0,119,255,.2); }
+  .btn-blue:hover { background: rgba(0,119,255,.2); }
+  .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border2); }
+  .btn-ghost:hover { color: var(--text); border-color: var(--muted); }
+  .btn-sm { padding: 5px 11px; font-size: 11.5px; }
+  .btn-xs { padding: 3px 8px; font-size: 11px; }
+  .logo-icon img, .auth-logo-icon img {width: 60px;background-color: var(--surface);border-radius: 5px;}
+  .logo-icon img {width: 50px;}
+  .content {padding: 22px 28px; flex: 1; }
+
+  /* ── PAGE VIEWS ── */
+  .page { display: none; }
+  .page.active { display: block; animation: fadeUp .3s ease both; }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+
+  /* ── STATS ROW ── */
+  .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 22px; }
+  .stat-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 15px 17px;
+    position: relative; overflow: hidden; transition: border-color .2s;
+  }
+  .stat-card:hover { border-color: var(--border2); }
+  .stat-label { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--muted); margin-bottom: 7px; }
+  .stat-value { font-size: 26px; font-weight: 800; line-height: 1; }
+  .stat-meta { font-size: 11px; color: var(--muted); margin-top: 4px; }
+  .stat-bar { margin-top: 11px; height: 3px; background: var(--border2); border-radius: 2px; }
+  .stat-fill { height: 100%; border-radius: 2px; }
+  .stat-icon { position: absolute; top: 13px; right: 14px; opacity: .12; width: 26px; height: 26px; }
+
+  /* ── TABLE ── */
+  .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+  .table-head {
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  }
+  .table-title { font-size: 14px; font-weight: 700; }
+  .table-actions { display: flex; align-items: center; gap: 8px; }
+  .search-box {
+    display: flex; align-items: center; gap: 7px;
+    background: var(--bg); border: 1px solid var(--border2);
+    border-radius: 8px; padding: 5px 10px;
+  }
+  .search-box svg { width: 13px; height: 13px; color: var(--muted); flex-shrink: 0; }
+  .search-box input {
+    background: none; border: none; outline: none;
+    color: var(--text); font-size: 12px; font-family: 'Syne', sans-serif;
+    width: 160px;
+  }
+  .search-box input::placeholder { color: var(--muted); }
+
+  table { width: 100%; border-collapse: collapse; }
+  thead th {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; font-weight: 600; letter-spacing: .5px;
+    color: var(--muted); text-transform: uppercase;
+    padding: 10px 20px; text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  tbody tr { transition: background .12s; cursor: default; }
+  tbody tr:hover { background: rgba(255,255,255,.02); }
+  tbody tr:not(:last-child) td { border-bottom: 1px solid var(--border); }
+  tbody td { padding: 12px 20px; font-size: 13px; vertical-align: middle; }
+
+  .badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; font-weight: 600;
+    padding: 2px 7px; border-radius: 5px;
+  }
+  .badge-green { background: rgba(34,197,94,.12); color: var(--green); }
+  .badge-warn  { background: rgba(245,158,11,.12); color: var(--warn); }
+  .badge-danger{ background: rgba(239,68,68,.12); color: var(--danger); }
+  .badge-blue  { background: rgba(0,119,255,.12); color: var(--accent2); }
+  .badge-muted { background: rgba(107,114,128,.12); color: var(--muted); }
+  .badge-purple{ background: rgba(168,85,247,.12); color: var(--purple); }
+  .badge::before { content:''; width:5px; height:5px; border-radius:50%; background: currentColor; }
+
+  .row-actions { display: flex; gap: 6px; }
+
+  /* ── DASHBOARD PANELS ── */
+  .main-actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 22px; }
+  .action-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; padding: 20px 18px;
+    cursor: pointer; transition: all .2s;
+    display: flex; flex-direction: column; gap: 10px;
+    text-decoration: none; color: inherit; position: relative; overflow: hidden;
+  }
+  .action-card::before { content:''; position:absolute; bottom:0; left:0; right:0; height:2px; opacity:0; transition:opacity .2s; }
+  .action-card:hover { border-color: var(--border2); transform: translateY(-1px); }
+  .action-card:hover::before { opacity:1; }
+  .ac-sites::before { background: var(--accent); }
+  .ac-db::before    { background: var(--accent2); }
+  .ac-settings::before { background: var(--warn); }
+  .ac-sites:hover  { box-shadow: 0 8px 24px rgba(0,229,160,.06); }
+  .ac-db:hover     { box-shadow: 0 8px 24px rgba(0,119,255,.06); }
+  .ac-settings:hover { box-shadow: 0 8px 24px rgba(245,158,11,.06); }
+  .ac-icon { width: 38px; height: 38px; border-radius: 10px; display:grid; place-items:center; }
+  .ac-icon svg { width: 18px; height: 18px; }
+  .ac-sites .ac-icon   { background:rgba(0,229,160,.1); color:var(--accent); }
+  .ac-db .ac-icon      { background:rgba(0,119,255,.1); color:var(--accent2); }
+  .ac-settings .ac-icon{ background:rgba(245,158,11,.1); color:var(--warn); }
+  .ac-title { font-size: 14px; font-weight: 700; }
+  .ac-desc  { font-size: 11px; color: var(--muted); line-height: 1.5; }
+  .ac-count { font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:600; margin-top:auto; }
+  .ac-sites .ac-count   { color:var(--accent); }
+  .ac-db .ac-count      { color:var(--accent2); }
+  .ac-settings .ac-count{ color:var(--warn); }
+
+  .bottom-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .panel { background:var(--surface); border:1px solid var(--border); border-radius:14px; overflow:hidden; }
+  .panel-head { padding:13px 18px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+  .panel-title { font-size:13px; font-weight:700; }
+  .site-row { display:flex; align-items:center; gap:10px; padding:11px 18px; border-bottom:1px solid var(--border); transition:background .15s; }
+  .site-row:last-child { border-bottom:none; }
+  .site-row:hover { background:rgba(255,255,255,.02); }
+  .site-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
+  .dot-ok   { background:var(--green); box-shadow:0 0 5px var(--green); }
+  .dot-warn { background:var(--warn); }
+  .dot-off  { background:var(--muted); }
+  .site-domain { font-size:13px; font-weight:600; }
+  .site-meta   { font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--muted); }
+  .log-line { display:flex; align-items:flex-start; gap:9px; padding:9px 18px; border-bottom:1px solid var(--border); font-family:'JetBrains Mono',monospace; font-size:11px; }
+  .log-line:last-child { border-bottom:none; }
+  .log-time { color:var(--muted); flex-shrink:0; padding-top:1px; }
+  .log-dot  { width:6px; height:6px; border-radius:50%; flex-shrink:0; margin-top:3px; }
+  .log-ok   { background:var(--green); }
+  .log-info { background:var(--accent2); }
+  .log-warn { background:var(--warn); }
+  .log-err  { background:var(--danger); }
+
+  /* ── LOGS PAGE ── */
+  .log-tabs { display:flex; gap:4px; margin-bottom:16px; }
+  .log-tab {
+    padding: 6px 14px; border-radius: 8px; font-size: 12px; font-weight: 600;
+    cursor: pointer; color: var(--muted); border: 1px solid transparent;
+    transition: all .15s;
+  }
+  .log-tab:hover { color: var(--text); }
+  .log-tab.active { color: var(--accent); background: rgba(0,229,160,.07); border-color: rgba(0,229,160,.2); }
+  .log-viewer {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; overflow: hidden;
+  }
+  .log-viewer-head {
+    padding: 12px 18px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .log-viewer-body {
+    font-family: 'JetBrains Mono', monospace; font-size: 11.5px;
+    padding: 16px 18px; height: 460px; overflow-y: auto; line-height: 1.8;
+  }
+  .log-entry { display: flex; gap: 16px; }
+  .log-ts { color: var(--muted); flex-shrink: 0; }
+  .log-level-ok   { color: var(--green); }
+  .log-level-warn { color: var(--warn); }
+  .log-level-err  { color: var(--danger); }
+  .log-level-info { color: var(--accent2); }
+  .log-text { color: var(--text); }
+
+  /* ── SETTINGS PAGE ── */
+  .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .settings-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+  .settings-card-head { padding: 14px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+  .settings-card-icon { width:32px; height:32px; border-radius:8px; display:grid; place-items:center; }
+  .settings-card-icon svg { width:15px; height:15px; }
+  .settings-card-title { font-size:13px; font-weight:700; }
+  .settings-card-body { padding: 16px 20px; display:flex; flex-direction:column; gap:12px; }
+  .form-row { display:flex; flex-direction:column; gap:5px; }
+  .form-label { font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; }
+  .form-input {
+    background: var(--bg); border: 1px solid var(--border2);
+    border-radius: 8px; padding: 8px 12px;
+    color: var(--text); font-size: 12.5px; font-family: 'Syne', sans-serif;
+    outline: none; transition: border-color .15s;
+  }
+  .form-input:focus { border-color: var(--accent); }
+  select.form-input { cursor: pointer; }
+  .form-input-row { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: end; }
+  .settings-full { grid-column: 1 / -1; }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,.7); backdrop-filter: blur(4px);
+    z-index: 100; align-items: center; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--surface); border: 1px solid var(--border2);
+    border-radius: 16px; padding: 0; width: 480px; max-width: 95vw;
+    animation: modalIn .2s ease;
+    max-height: 90vh; overflow-y: auto;
+  }
+  @keyframes modalIn { from{opacity:0;transform:scale(.96)} to{opacity:1;transform:scale(1)} }
+  .modal-head {
+    padding: 18px 22px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .modal-title { font-size: 15px; font-weight: 800; }
+  .modal-close {
+    width: 28px; height: 28px; border-radius: 7px;
+    background: var(--border); border: none; cursor: pointer;
+    display: grid; place-items: center; color: var(--muted);
+    transition: all .15s;
+  }
+  .modal-close:hover { background: var(--border2); color: var(--text); }
+  .modal-body { padding: 20px 22px; display: flex; flex-direction: column; gap: 14px; }
+  .modal-footer { padding: 14px 22px; border-top: 1px solid var(--border); display: flex; gap: 8px; justify-content: flex-end; }
+
+  /* ── CHECKBOX GROUP ── */
+  .checkbox-group { display: flex; flex-wrap: wrap; gap: 8px; }
+  .cb-item { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+  .cb-item input { accent-color: var(--accent); width: 13px; height: 13px; cursor: pointer; }
+  .cb-item label { font-size: 12px; color: var(--text); cursor: pointer; font-family: 'JetBrains Mono', monospace; }
+
+  /* ── AUTH PAGE ── */
+  .auth-page {
+    display: none; position: fixed; inset: 0;
+    background: var(--bg); z-index: 200;
+    align-items: center; justify-content: center;
+  }
+  .auth-page.open { display: flex; }
+  .auth-box {
+    background: var(--surface); border: 1px solid var(--border2);
+    border-radius: 20px; padding: 36px 40px; width: 380px;
+    display: flex; flex-direction: column; gap: 22px;
+  }
+  .auth-logo { display: flex; align-items: center; gap: 11px; }
+  .auth-logo-icon {
+    height: 40px;
+    background: linear-gradient(135deg, var(--accent), #00b377);
+    border-radius: 10px; display: grid; place-items: center;
+  }
+  .auth-logo-icon svg { width: 20px; height: 20px; color: #000; }
+  .auth-logo-name { font-size: 20px; font-weight: 800; }
+  .auth-logo-tag  { font-family:'JetBrains Mono',monospace; font-size:9px; color:var(--muted); }
+  .auth-title { font-size: 22px; font-weight: 800; }
+  .auth-sub   { font-size: 12px; color: var(--muted); margin-top: 4px; line-height: 1.5; }
+  .auth-form  { display: flex; flex-direction: column; gap: 12px; }
+  .auth-input {
+    background: var(--bg); border: 1px solid var(--border2);
+    border-radius: 10px; padding: 10px 14px;
+    color: var(--text); font-size: 13px; font-family: 'Syne', sans-serif;
+    outline: none; transition: border-color .15s; width: 100%;
+  }
+  .auth-input:focus { border-color: var(--accent); }
+  .auth-btn {
+    width: 100%; padding: 11px; border-radius: 10px;
+    background: var(--accent); color: #000;
+    font-size: 14px; font-weight: 800; font-family: 'Syne', sans-serif;
+    border: none; cursor: pointer; transition: all .15s;
+  }
+  .auth-btn:hover { background: #00ffb3; transform: translateY(-1px); }
+  .auth-reset { font-size: 12px; color: var(--accent); cursor: pointer; text-align: center; text-decoration: underline; }
+  .auth-error { background: rgba(239,68,68,.1); border: 1px solid rgba(239,68,68,.2); border-radius: 8px; padding: 9px 12px; font-size: 12px; color: var(--danger); display: none; }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+  /* ── DIVIDER ── */
+  .divider { height: 1px; background: var(--border); margin: 4px 0; }
+
+  /* ── SECTION HEADER ── */
+  .section-hdr { display:flex; align-items:center; justify-content:space-between; margin-bottom: 14px; }
+  .section-hdr-title { font-size: 15px; font-weight: 700; }
+
+  /* PHP version chips */
+  .php-chips { display:flex; gap:6px; flex-wrap:wrap; }
+  .php-chip {
+    padding: 5px 12px; border-radius: 8px; font-size: 12px; font-weight: 600;
+    font-family:'JetBrains Mono',monospace; cursor:pointer;
+    border: 1px solid var(--border2); color: var(--muted); transition:all .15s;
+  }
+  .php-chip:hover { border-color: var(--accent); color: var(--accent); }
+  .php-chip.active { background: rgba(0,229,160,.1); border-color: var(--accent); color: var(--accent); }
+
+  /* Danger zone */
+  .danger-zone { background: rgba(239,68,68,.05); border: 1px solid rgba(239,68,68,.15); border-radius: 14px; padding: 16px 20px; display:flex; align-items:center; justify-content:space-between; gap:16px; }
+  .danger-zone-text h4 { font-size:13px; font-weight:700; color:var(--danger); }
+  .danger-zone-text p  { font-size:11.5px; color:var(--muted); margin-top:3px; }
+
+  /* FTP icon color */
+  .ac-ftp::before { background: var(--purple); }
+  .ac-ftp:hover   { box-shadow: 0 8px 24px rgba(168,85,247,.06); }
+  .ac-ftp .ac-icon { background: rgba(168,85,247,.1); color: var(--purple); }
+  .ac-ftp .ac-count { color: var(--purple); }
+
+  /* Notif dot */
+  .notif-wrap { position: relative; }
+  .notif-dot { position:absolute; top:-3px; right:-3px; width:7px; height:7px; border-radius:50%; background:var(--accent); box-shadow:0 0 6px var(--accent); }
+
+  /* Empty state */
+  .empty-state { padding: 48px 20px; text-align: center; color: var(--muted); }
+  .empty-state svg { width: 36px; height: 36px; opacity: .3; margin-bottom: 12px; }
+  .empty-state p { font-size: 13px; }
+
+  /* Toggle */
+  .toggle { position:relative; display:inline-block; width:36px; height:20px; }
+  .toggle input { display:none; }
+  .toggle-slider {
+    position:absolute; inset:0; border-radius:20px;
+    background:var(--border2); cursor:pointer; transition:.2s;
+  }
+  .toggle-slider::before {
+    content:''; position:absolute; width:14px; height:14px;
+    border-radius:50%; background:#fff; bottom:3px; left:3px; transition:.2s;
+  }
+  .toggle input:checked + .toggle-slider { background: var(--accent); }
+  .toggle input:checked + .toggle-slider::before { transform: translateX(16px); }
+
+  .flex-row { display:flex; align-items:center; justify-content:space-between; }
+  .text-muted { color: var(--muted); font-size: 12px; }
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════
+     AUTH PAGE
+══════════════════════════════════ -->
+<div class="auth-page open" id="authPage">
+  <div class="auth-box">
+    <div class="auth-logo">
+      <div class="auth-logo-icon">
+        <img src="adelpanel.png">
+      </div>
+      <div>
+        <div class="auth-logo-name">AdelPanel</div>
+        <div class="auth-logo-tag">v0.12-alpha · Server Control</div>
+      </div>
+    </div>
+    <div>
+      <div class="auth-title">Вход в панель</div>
+      <div class="auth-sub">Используйте системного пользователя сервера</div>
+    </div>
+    <div class="auth-form">
+      <div class="auth-error" id="authError">Неверный логин или пароль</div>
+      <div class="form-row">
+        <div class="form-label">Пользователь</div>
+        <input type="text" class="auth-input" id="authUser" placeholder="root или системный юзер" value="admin">
+      </div>
+      <div class="form-row">
+        <div class="form-label">Пароль</div>
+        <input type="password" class="auth-input" id="authPass" placeholder="••••••••" value="password">
+      </div>
+      <button class="auth-btn" onclick="doLogin()">Войти</button>
+      <div class="auth-reset" onclick="showResetModal()">Сбросить пароль</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     SIDEBAR
+══════════════════════════════════ -->
+<aside class="sidebar">
+  <div class="logo">
+    <div class="logo-mark">
+      <div class="logo-icon">
+        <img src="adelpanel.png">
+      </div>
+      <div>
+        <div class="logo-name">AdelPanel</div>
+        <div class="logo-tag">v0.12-alpha</div>
+      </div>
+    </div>
+  </div>
+
+  <nav class="nav">
+    <div class="nav-section">
+      <div class="nav-label">Обзор</div>
+      <a class="nav-item active" onclick="showPage('dashboard', this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Главная
+      </a>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Управление</div>
+      <a class="nav-item" onclick="showPage('sites', this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+        Сайты
+        <span class="nav-badge">3</span>
+      </a>
+      <a class="nav-item" onclick="showPage('databases', this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v6c0 1.66 4 3 9 3s9-1.34 9-3V5"/><path d="M3 11v6c0 1.66 4 3 9 3s9-1.34 9-3v-6"/></svg>
+        Базы данных
+        <span class="nav-badge">2</span>
+      </a>
+      <a class="nav-item" onclick="showPage('ftp', this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.19 12 19.79 19.79 0 0 1 1.1 3.38 2 2 0 0 1 3.08 1h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.09 8.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+        FTP
+        <span class="nav-badge" style="background:rgba(168,85,247,.15);color:var(--purple)">2</span>
+      </a>
+      <a class="nav-item" onclick="showPage('ssl', this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        SSL-сертификаты
+      </a>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Система</div>
+      <a class="nav-item" onclick="showPage('logs', this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        Логи
+      </a>
+      <a class="nav-item" onclick="showPage('settings', this)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M21 12h-2M19.07 19.07l-1.41-1.41M12 21v-2M4.93 19.07l1.41-1.41M3 12h2M4.93 4.93l1.41 1.41M12 3V5"/></svg>
+        Настройки
+      </a>
+    </div>
+  </nav>
+
+  <div class="server-info">
+    <div class="server-dot"></div>
+    <div class="server-text">
+      <strong>vps-prod-01</strong><br>
+      185.22.114.7 · Ubuntu 22.04
+    </div>
+  </div>
+</aside>
+
+<!-- ══════════════════════════════════
+     MAIN
+══════════════════════════════════ -->
+<div class="main">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div>
+      <div class="page-title" id="pageTitle">Главная</div>
+      <div class="page-sub" id="pageSub">UPTIME: 14д 6ч 42м &nbsp;·&nbsp; NGINX 1.24 &nbsp;·&nbsp; PHP 8.2</div>
+    </div>
+    <div class="topbar-actions">
+      <button class="btn btn-ghost btn-sm notif-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M22 17H2a3 3 0 0 0 3-3V9a7 7 0 0 1 14 0v5a3 3 0 0 0 3 3zm-8.27 4a2 2 0 0 1-3.46 0"/></svg>
+        Уведомления
+        <span class="notif-dot"></span>
+      </button>
+      <button class="btn btn-ghost btn-sm" onclick="logout()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Выйти
+      </button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- ══════════ DASHBOARD ══════════ -->
+    <div class="page active" id="page-dashboard">
+      <div class="stats-row">
+        <div class="stat-card">
+          <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>
+          <div class="stat-label">CPU</div>
+          <div class="stat-value" style="color:var(--accent)">18<span style="font-size:14px;font-weight:400">%</span></div>
+          <div class="stat-meta">1 ядро · 2.4 GHz</div>
+          <div class="stat-bar"><div class="stat-fill" style="width:18%;background:var(--accent)"></div></div>
+        </div>
+        <div class="stat-card">
+          <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 12h.01M10 12h.01"/></svg>
+          <div class="stat-label">RAM</div>
+          <div class="stat-value" style="color:var(--accent2)">1.2<span style="font-size:14px;font-weight:400">GB</span></div>
+          <div class="stat-meta">из 2 GB · 61%</div>
+          <div class="stat-bar"><div class="stat-fill" style="width:61%;background:var(--accent2)"></div></div>
+        </div>
+        <div class="stat-card">
+          <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><ellipse cx="12" cy="12" rx="10" ry="6"/><line x1="2" y1="12" x2="22" y2="12"/></svg>
+          <div class="stat-label">ДИСК</div>
+          <div class="stat-value" style="color:var(--warn)">14<span style="font-size:14px;font-weight:400">GB</span></div>
+          <div class="stat-meta">из 40 GB · 35%</div>
+          <div class="stat-bar"><div class="stat-fill" style="width:35%;background:var(--warn)"></div></div>
+        </div>
+        <div class="stat-card">
+          <svg class="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <div class="stat-label">АПТАЙМ</div>
+          <div class="stat-value" style="color:var(--green)">99<span style="font-size:14px;font-weight:400">%</span></div>
+          <div class="stat-meta">14д 6ч 42м</div>
+          <div class="stat-bar"><div class="stat-fill" style="width:99%;background:var(--green)"></div></div>
+        </div>
+      </div>
+
+      <div class="main-actions">
+        <a class="action-card ac-sites" onclick="showPage('sites', document.querySelectorAll('.nav-item')[1])">
+          <div class="ac-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></div>
+          <div><div class="ac-title">Сайты</div><div class="ac-desc">Добавление доменов, Nginx конфиги, SSL автоматически</div></div>
+          <div class="ac-count">3 активных сайта →</div>
+        </a>
+        <a class="action-card ac-db" onclick="showPage('databases', document.querySelectorAll('.nav-item')[2])">
+          <div class="ac-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v6c0 1.66 4 3 9 3s9-1.34 9-3V5"/><path d="M3 11v6c0 1.66 4 3 9 3s9-1.34 9-3v-6"/></svg></div>
+          <div><div class="ac-title">Базы данных</div><div class="ac-desc">Создание MySQL/MariaDB БД и пользователей в один клик</div></div>
+          <div class="ac-count">2 базы данных →</div>
+        </a>
+        <a class="action-card ac-settings" onclick="showPage('settings', document.querySelectorAll('.nav-item')[6])">
+          <div class="ac-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M21 12h-2M19.07 19.07l-1.41-1.41M12 21v-2M4.93 19.07l1.41-1.41M3 12h2M4.93 4.93l1.41 1.41M12 3V5"/></svg></div>
+          <div><div class="ac-title">Настройки сервера</div><div class="ac-desc">PHP версии, LEMP/LAMP стек, брандмауэр, SSH-ключи</div></div>
+          <div class="ac-count">Открыть →</div>
+        </a>
+      </div>
+
+      <div class="bottom-grid">
+        <div class="panel">
+          <div class="panel-head">
+            <span class="panel-title">Активные сайты</span>
+            <button class="btn btn-ghost btn-sm" onclick="showPage('sites', document.querySelectorAll('.nav-item')[1])">Все сайты</button>
+          </div>
+          <div>
+            <div class="site-row"><div class="site-dot dot-ok"></div><div style="flex:1"><div class="site-domain">myproject.dev</div><div class="site-meta">PHP 8.2 · /var/www/myproject</div></div><span class="badge badge-green">SSL ✓</span></div>
+            <div class="site-row"><div class="site-dot dot-warn"></div><div style="flex:1"><div class="site-domain">shop.example.com</div><div class="site-meta">PHP 8.1 · /var/www/shop</div></div><span class="badge badge-warn">SSL 3д</span></div>
+            <div class="site-row"><div class="site-dot dot-off"></div><div style="flex:1"><div class="site-domain">staging.myapp.ru</div><div class="site-meta">PHP 8.2 · /var/www/staging</div></div><span class="badge badge-green">SSL ✓</span></div>
+            <div style="padding:12px 18px"><button class="btn btn-primary btn-sm" style="width:100%;justify-content:center" onclick="openModal('modalAddSite')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="12" height="12"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Добавить сайт</button></div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-head">
+            <span class="panel-title">Последние события</span>
+            <button class="btn btn-ghost btn-sm" onclick="showPage('logs', document.querySelectorAll('.nav-item')[5])">Все логи</button>
+          </div>
+          <div>
+            <div class="log-line"><span class="log-time">14:31</span><div class="log-dot log-ok"></div><span class="log-msg">SSL-сертификат для <strong>myproject.dev</strong> успешно выпущен</span></div>
+            <div class="log-line"><span class="log-time">13:58</span><div class="log-dot log-info"></div><span class="log-msg">Создана БД <strong>shop_db</strong>, пользователь <strong>shop_user</strong></span></div>
+            <div class="log-line"><span class="log-time">13:12</span><div class="log-dot log-ok"></div><span class="log-msg">Сайт <strong>shop.example.com</strong> добавлен, Nginx перезагружен</span></div>
+            <div class="log-line"><span class="log-time">11:05</span><div class="log-dot log-warn"></div><span class="log-msg">SSL <strong>shop.example.com</strong> истекает через 3 дня</span></div>
+            <div class="log-line"><span class="log-time">09:44</span><div class="log-dot log-info"></div><span class="log-msg">PHP обновлён до <strong>8.2.18</strong> через apt</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════ SITES ══════════ -->
+    <div class="page" id="page-sites">
+      <div class="section-hdr">
+        <div class="section-hdr-title">Управление сайтами</div>
+        <button class="btn btn-primary btn-sm" onclick="openModal('modalAddSite')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Добавить сайт
+        </button>
+      </div>
+      <div class="table-wrap">
+        <div class="table-head">
+          <div class="table-title">Сайты <span style="color:var(--muted);font-weight:500;font-size:12px">(3)</span></div>
+          <div class="table-actions">
+            <div class="search-box">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text" placeholder="Поиск домена...">
+            </div>
+          </div>
+        </div>
+        <table>
+          <thead><tr><th>Домен</th><th>PHP</th><th>Путь</th><th>SSL</th><th>HTTP AUTH</th><th>Статус</th><th>Действия</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><strong>myproject.dev</strong></td>
+              <td><span class="badge badge-blue">8.2</span></td>
+              <td><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted)">/var/www/myproject</span></td>
+              <td><span class="badge badge-green">Активен</span></td>
+              <td><span class="badge badge-muted">Выкл</span></td>
+              <td><span class="badge badge-green">Работает</span></td>
+              <td><div class="row-actions">
+                <button class="btn btn-blue btn-xs" onclick="openModal('modalSSL')">SSL</button>
+                <button class="btn btn-warn btn-xs" onclick="openModal('modalHTTPAuth')">Auth</button>
+                <button class="btn btn-danger btn-xs" onclick="openModal('modalDeleteSite')">Удалить</button>
+              </div></td>
+            </tr>
+            <tr>
+              <td><strong>shop.example.com</strong></td>
+              <td><span class="badge badge-blue">8.1</span></td>
+              <td><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted)">/var/www/shop</span></td>
+              <td><span class="badge badge-warn">Истекает 3д</span></td>
+              <td><span class="badge badge-green">Вкл</span></td>
+              <td><span class="badge badge-green">Работает</span></td>
+              <td><div class="row-actions">
+                <button class="btn btn-blue btn-xs" onclick="openModal('modalSSL')">SSL</button>
+                <button class="btn btn-warn btn-xs" onclick="openModal('modalHTTPAuth')">Auth</button>
+                <button class="btn btn-danger btn-xs" onclick="openModal('modalDeleteSite')">Удалить</button>
+              </div></td>
+            </tr>
+            <tr>
+              <td><strong>staging.myapp.ru</strong></td>
+              <td><span class="badge badge-blue">8.2</span></td>
+              <td><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted)">/var/www/staging</span></td>
+              <td><span class="badge badge-green">Активен</span></td>
+              <td><span class="badge badge-muted">Выкл</span></td>
+              <td><span class="badge badge-muted">Остановлен</span></td>
+              <td><div class="row-actions">
+                <button class="btn btn-blue btn-xs" onclick="openModal('modalSSL')">SSL</button>
+                <button class="btn btn-warn btn-xs" onclick="openModal('modalHTTPAuth')">Auth</button>
+                <button class="btn btn-danger btn-xs" onclick="openModal('modalDeleteSite')">Удалить</button>
+              </div></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ══════════ DATABASES ══════════ -->
+    <div class="page" id="page-databases">
+      <div class="section-hdr">
+        <div class="section-hdr-title">Базы данных</div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost btn-sm" onclick="openModal('modalAddDB')">+ База данных</button>
+          <button class="btn btn-primary btn-sm" onclick="openModal('modalAddDBUser')">+ Пользователь</button>
+        </div>
+      </div>
+
+      <!-- Databases table -->
+      <div class="table-wrap" style="margin-bottom:16px">
+        <div class="table-head">
+          <div class="table-title">Базы данных</div>
+        </div>
+        <table>
+          <thead><tr><th>База данных</th><th>Размер</th><th>Кодировка</th><th>Пользователи</th><th>Действия</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><strong>shop_db</strong></td>
+              <td><span style="font-family:'JetBrains Mono',monospace;font-size:11px">42 MB</span></td>
+              <td><span class="badge badge-muted">utf8mb4</span></td>
+              <td><span class="badge badge-blue">shop_user</span></td>
+              <td><div class="row-actions">
+                <button class="btn btn-blue btn-xs" onclick="openModal('modalAddUserToDB')">Добавить юзера</button>
+                <button class="btn btn-danger btn-xs" onclick="openModal('modalDeleteDB')">Удалить</button>
+              </div></td>
+            </tr>
+            <tr>
+              <td><strong>myproject_db</strong></td>
+              <td><span style="font-family:'JetBrains Mono',monospace;font-size:11px">8 MB</span></td>
+              <td><span class="badge badge-muted">utf8mb4</span></td>
+              <td><span class="badge badge-blue">myproject_user</span></td>
+              <td><div class="row-actions">
+                <button class="btn btn-blue btn-xs" onclick="openModal('modalAddUserToDB')">Добавить юзера</button>
+                <button class="btn btn-danger btn-xs" onclick="openModal('modalDeleteDB')">Удалить</button>
+              </div></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Users table -->
+      <div class="table-wrap">
+        <div class="table-head">
+          <div class="table-title">Пользователи MySQL</div>
+        </div>
+        <table>
+          <thead><tr><th>Пользователь</th><th>Хост</th><th>Базы данных</th><th>Права</th><th>Действия</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><strong>shop_user</strong></td>
+              <td><span class="badge badge-muted">localhost</span></td>
+              <td><span class="badge badge-blue">shop_db</span></td>
+              <td><span class="badge badge-green">ALL</span></td>
+              <td><div class="row-actions">
+                <button class="btn btn-warn btn-xs" onclick="openModal('modalChangeDBPass')">Пароль</button>
+                <button class="btn btn-blue btn-xs" onclick="openModal('modalEditPerms')">Права</button>
+                <button class="btn btn-danger btn-xs" onclick="openModal('modalDeleteDBUser')">Удалить</button>
+              </div></td>
+            </tr>
+            <tr>
+              <td><strong>myproject_user</strong></td>
+              <td><span class="badge badge-muted">localhost</span></td>
+              <td><span class="badge badge-blue">myproject_db</span></td>
+              <td><span class="badge badge-warn">SELECT, INSERT</span></td>
+              <td><div class="row-actions">
+                <button class="btn btn-warn btn-xs" onclick="openModal('modalChangeDBPass')">Пароль</button>
+                <button class="btn btn-blue btn-xs" onclick="openModal('modalEditPerms')">Права</button>
+                <button class="btn btn-danger btn-xs" onclick="openModal('modalDeleteDBUser')">Удалить</button>
+              </div></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ══════════ FTP ══════════ -->
+    <div class="page" id="page-ftp">
+      <div class="section-hdr">
+        <div class="section-hdr-title">FTP пользователи</div>
+        <button class="btn btn-primary btn-sm" onclick="openModal('modalAddFTP')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Добавить FTP
+        </button>
+      </div>
+      <div class="table-wrap">
+        <div class="table-head">
+          <div class="table-title">Пользователи FTP <span style="color:var(--muted);font-weight:500;font-size:12px">(2)</span></div>
+        </div>
+        <table>
+          <thead><tr><th>Пользователь</th><th>Корневая папка</th><th>Сайт</th><th>Статус</th><th>Действия</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><strong>ftp_shop</strong></td>
+              <td><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted)">/var/www/shop</span></td>
+              <td><span class="badge badge-blue">shop.example.com</span></td>
+              <td><span class="badge badge-green">Активен</span></td>
+              <td><div class="row-actions">
+                <button class="btn btn-warn btn-xs" onclick="openModal('modalChangeFTPPass')">Пароль</button>
+                <button class="btn btn-blue btn-xs" onclick="openModal('modalEditFTPPath')">Путь</button>
+                <button class="btn btn-danger btn-xs" onclick="openModal('modalDeleteFTP')">Удалить</button>
+              </div></td>
+            </tr>
+            <tr>
+              <td><strong>ftp_dev</strong></td>
+              <td><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted)">/var/www/myproject</span></td>
+              <td><span class="badge badge-blue">myproject.dev</span></td>
+              <td><span class="badge badge-green">Активен</span></td>
+              <td><div class="row-actions">
+                <button class="btn btn-warn btn-xs" onclick="openModal('modalChangeFTPPass')">Пароль</button>
+                <button class="btn btn-blue btn-xs" onclick="openModal('modalEditFTPPath')">Путь</button>
+                <button class="btn btn-danger btn-xs" onclick="openModal('modalDeleteFTP')">Удалить</button>
+              </div></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ══════════ SSL ══════════ -->
+    <div class="page" id="page-ssl">
+      <div class="section-hdr">
+        <div class="section-hdr-title">SSL-сертификаты</div>
+        <button class="btn btn-primary btn-sm" onclick="openModal('modalSSL')">+ Выпустить SSL</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Домен</th><th>Выдан</th><th>Истекает</th><th>Авто-продление</th><th>Статус</th><th>Действия</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><strong>myproject.dev</strong></td>
+              <td><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted)">2025-03-01</span></td>
+              <td><span style="font-family:'JetBrains Mono',monospace;font-size:11px">2025-06-01</span></td>
+              <td><label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label></td>
+              <td><span class="badge badge-green">Активен</span></td>
+              <td><div class="row-actions">
+                <button class="btn btn-blue btn-xs">Обновить</button>
+                <button class="btn btn-danger btn-xs">Отозвать</button>
+              </div></td>
+            </tr>
+            <tr>
+              <td><strong>shop.example.com</strong></td>
+              <td><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted)">2024-12-01</span></td>
+              <td><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--warn)">2025-03-08 ⚠</span></td>
+              <td><label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label></td>
+              <td><span class="badge badge-warn">Истекает 3д</span></td>
+              <td><div class="row-actions">
+                <button class="btn btn-primary btn-xs">Обновить!</button>
+                <button class="btn btn-danger btn-xs">Отозвать</button>
+              </div></td>
+            </tr>
+            <tr>
+              <td><strong>staging.myapp.ru</strong></td>
+              <td><span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted)">2025-01-15</span></td>
+              <td><span style="font-family:'JetBrains Mono',monospace;font-size:11px">2025-04-15</span></td>
+              <td><label class="toggle"><input type="checkbox"><span class="toggle-slider"></span></label></td>
+              <td><span class="badge badge-green">Активен</span></td>
+              <td><div class="row-actions">
+                <button class="btn btn-blue btn-xs">Обновить</button>
+                <button class="btn btn-danger btn-xs">Отозвать</button>
+              </div></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ══════════ LOGS ══════════ -->
+    <div class="page" id="page-logs">
+      <div class="section-hdr">
+        <div class="section-hdr-title">Просмотр логов</div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <select class="form-input btn-sm" style="font-size:12px;padding:5px 10px">
+            <option>myproject.dev</option>
+            <option>shop.example.com</option>
+            <option>staging.myapp.ru</option>
+          </select>
+          <button class="btn btn-ghost btn-sm">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.71"/></svg>
+            Обновить
+          </button>
+        </div>
+      </div>
+
+      <div class="log-tabs">
+        <div class="log-tab active" onclick="switchLogTab(this, 'access')">Access лог</div>
+        <div class="log-tab" onclick="switchLogTab(this, 'error')">Error лог</div>
+        <div class="log-tab" onclick="switchLogTab(this, 'php')">PHP лог</div>
+        <div class="log-tab" onclick="switchLogTab(this, 'ftp')">FTP лог</div>
+        <div class="log-tab" onclick="switchLogTab(this, 'server')">Сервер</div>
+      </div>
+
+      <div class="log-viewer">
+        <div class="log-viewer-head">
+          <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted)" id="logFileName">/var/log/nginx/myproject.dev.access.log</span>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-ghost btn-xs">Скачать</button>
+            <button class="btn btn-danger btn-xs">Очистить</button>
+          </div>
+        </div>
+        <div class="log-viewer-body" id="logBody">
+          <div class="log-entry"><span class="log-ts">2025-03-05 14:31:02</span><span class="log-level-ok">[INFO]</span><span class="log-text">&nbsp;185.22.1.1 - GET /index.php HTTP/1.1 200 4821</span></div>
+          <div class="log-entry"><span class="log-ts">2025-03-05 14:30:55</span><span class="log-level-ok">[INFO]</span><span class="log-text">&nbsp;185.22.1.1 - GET /assets/main.css HTTP/1.1 304 0</span></div>
+          <div class="log-entry"><span class="log-ts">2025-03-05 14:29:41</span><span class="log-level-warn">[WARN]</span><span class="log-text">&nbsp;91.108.4.1 - GET /wp-login.php HTTP/1.1 404 162</span></div>
+          <div class="log-entry"><span class="log-ts">2025-03-05 14:28:12</span><span class="log-level-ok">[INFO]</span><span class="log-text">&nbsp;185.22.1.1 - POST /api/login HTTP/1.1 200 88</span></div>
+          <div class="log-entry"><span class="log-ts">2025-03-05 14:27:30</span><span class="log-level-err">[ERROR]</span><span class="log-text">&nbsp;185.22.1.2 - GET /admin HTTP/1.1 403 0</span></div>
+          <div class="log-entry"><span class="log-ts">2025-03-05 14:26:18</span><span class="log-level-ok">[INFO]</span><span class="log-text">&nbsp;185.22.1.1 - GET /products HTTP/1.1 200 12540</span></div>
+          <div class="log-entry"><span class="log-ts">2025-03-05 14:25:55</span><span class="log-level-ok">[INFO]</span><span class="log-text">&nbsp;45.9.20.1 - GET /robots.txt HTTP/1.1 200 64</span></div>
+          <div class="log-entry"><span class="log-ts">2025-03-05 14:24:12</span><span class="log-level-err">[ERROR]</span><span class="log-text">&nbsp;185.22.1.3 - GET /shell.php HTTP/1.1 404 162</span></div>
+          <div class="log-entry"><span class="log-ts">2025-03-05 14:23:01</span><span class="log-level-ok">[INFO]</span><span class="log-text">&nbsp;185.22.1.1 - GET /cart HTTP/1.1 200 8840</span></div>
+          <div class="log-entry"><span class="log-ts">2025-03-05 14:21:44</span><span class="log-level-info">[INFO]</span><span class="log-text">&nbsp;185.22.1.1 - GET /checkout HTTP/1.1 200 9210</span></div>
+          <div class="log-entry"><span class="log-ts">2025-03-05 14:20:30</span><span class="log-level-ok">[INFO]</span><span class="log-text">&nbsp;91.108.4.2 - GET / HTTP/1.1 200 4821</span></div>
+          <div class="log-entry"><span class="log-ts">2025-03-05 14:19:15</span><span class="log-level-warn">[WARN]</span><span class="log-text">&nbsp;91.108.4.1 - GET /phpmyadmin HTTP/1.1 404 162</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════ SETTINGS ══════════ -->
+    <div class="page" id="page-settings">
+      <div class="section-hdr" style="margin-bottom:16px">
+        <div class="section-hdr-title">Настройки сервера</div>
+      </div>
+
+      <div class="settings-grid">
+        <!-- Основное -->
+        <div class="settings-card">
+          <div class="settings-card-head">
+            <div class="settings-card-icon" style="background:rgba(0,229,160,.1);color:var(--accent)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+            </div>
+            <div class="settings-card-title">Основные</div>
+          </div>
+          <div class="settings-card-body">
+            <div class="form-row">
+              <div class="form-label">Hostname</div>
+              <div class="form-input-row">
+                <input type="text" class="form-input" value="vps-prod-01">
+                <button class="btn btn-primary btn-sm">Сохранить</button>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-label">Часовой пояс</div>
+              <div class="form-input-row">
+                <select class="form-input">
+                  <option>Europe/Moscow</option>
+                  <option>Europe/Kiev</option>
+                  <option>UTC</option>
+                  <option>Asia/Almaty</option>
+                </select>
+                <button class="btn btn-primary btn-sm">Применить</button>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-label">DNS-резолвер</div>
+              <div class="form-input-row">
+                <input type="text" class="form-input" value="8.8.8.8, 1.1.1.1">
+                <button class="btn btn-primary btn-sm">Сохранить</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Своп -->
+        <div class="settings-card">
+          <div class="settings-card-head">
+            <div class="settings-card-icon" style="background:rgba(0,119,255,.1);color:var(--accent2)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/></svg>
+            </div>
+            <div class="settings-card-title">Своп (SWAP)</div>
+          </div>
+          <div class="settings-card-body">
+            <div class="flex-row">
+              <div>
+                <div class="form-label">Текущий своп</div>
+                <div style="font-size:13px;margin-top:4px">512 MB <span class="badge badge-green" style="font-size:9px">Активен</span></div>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-label">Размер свопа</div>
+              <div class="form-input-row">
+                <select class="form-input">
+                  <option>512 MB</option>
+                  <option selected>1 GB</option>
+                  <option>2 GB</option>
+                  <option>4 GB</option>
+                </select>
+                <button class="btn btn-primary btn-sm">Применить</button>
+              </div>
+            </div>
+            <button class="btn btn-danger btn-sm">Отключить своп</button>
+          </div>
+        </div>
+
+        <!-- PHP -->
+        <div class="settings-card">
+          <div class="settings-card-head">
+            <div class="settings-card-icon" style="background:rgba(168,85,247,.1);color:var(--purple)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+            </div>
+            <div class="settings-card-title">Версия PHP</div>
+          </div>
+          <div class="settings-card-body">
+            <div>
+              <div class="form-label" style="margin-bottom:8px">Активная версия</div>
+              <div class="php-chips">
+                <div class="php-chip">7.4</div>
+                <div class="php-chip">8.0</div>
+                <div class="php-chip">8.1</div>
+                <div class="php-chip active">8.2</div>
+                <div class="php-chip">8.3</div>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-label">PHP-FPM статус</div>
+              <div class="flex-row" style="margin-top:4px">
+                <span class="badge badge-green">php8.2-fpm работает</span>
+                <button class="btn btn-warn btn-xs">Перезапустить</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Панель -->
+        <div class="settings-card">
+          <div class="settings-card-head">
+            <div class="settings-card-icon" style="background:rgba(245,158,11,.1);color:var(--warn)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            </div>
+            <div class="settings-card-title">Настройки панели</div>
+          </div>
+          <div class="settings-card-body">
+            <div class="form-row">
+              <div class="form-label">Порт панели</div>
+              <div class="form-input-row">
+                <input type="number" class="form-input" value="7474">
+                <button class="btn btn-warn btn-sm">Сменить</button>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-label">Пароль панели</div>
+              <div class="form-input-row">
+                <input type="password" class="form-input" placeholder="Новый пароль">
+                <button class="btn btn-primary btn-sm">Сохранить</button>
+              </div>
+            </div>
+            <div class="flex-row">
+              <span class="text-muted">Разрешить только мой IP</span>
+              <label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Обновления -->
+        <div class="settings-card settings-full">
+          <div class="settings-card-head">
+            <div class="settings-card-icon" style="background:rgba(34,197,94,.1);color:var(--green)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.71"/></svg>
+            </div>
+            <div class="settings-card-title">Обновление компонентов</div>
+          </div>
+          <div class="settings-card-body" style="flex-direction:row;gap:10px;flex-wrap:wrap">
+            <button class="btn btn-ghost btn-sm">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.71"/></svg>
+              apt update && upgrade
+            </button>
+            <button class="btn btn-ghost btn-sm">Обновить Nginx</button>
+            <button class="btn btn-ghost btn-sm">Обновить PHP</button>
+            <button class="btn btn-ghost btn-sm">Обновить MariaDB</button>
+            <button class="btn btn-ghost btn-sm">Обновить certbot</button>
+            <div style="flex:1"></div>
+            <div class="danger-zone" style="flex:none;margin-left:auto">
+              <div class="danger-zone-text">
+                <h4>Перезагрузка сервера</h4>
+                <p>Все сайты будут недоступны ~30 секунд</p>
+              </div>
+              <button class="btn btn-danger btn-sm" onclick="openModal('modalReboot')">Перезагрузить</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+
+<!-- ══════════════════════════════════
+     MODALS
+══════════════════════════════════ -->
+
+<!-- Add Site -->
+<div class="modal-overlay" id="modalAddSite">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-title">Добавить сайт</div><button class="modal-close" onclick="closeModal('modalAddSite')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <div class="modal-body">
+      <div class="form-row"><div class="form-label">Домен</div><input type="text" class="form-input" placeholder="example.com"></div>
+      <div class="form-row"><div class="form-label">Путь (оставьте пустым для авто)</div><input type="text" class="form-input" placeholder="/var/www/example"></div>
+      <div class="form-row">
+        <div class="form-label">Версия PHP</div>
+        <select class="form-input"><option>8.3</option><option selected>8.2</option><option>8.1</option><option>8.0</option><option>7.4</option></select>
+      </div>
+      <div class="form-row">
+        <div class="form-label">Веб-сервер</div>
+        <select class="form-input"><option>Nginx</option><option>Apache</option><option>Nginx + Apache</option></select>
+      </div>
+      <div class="flex-row">
+        <span class="text-muted">Автоматически выпустить SSL (Let's Encrypt)</span>
+        <label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+      </div>
+      <div class="flex-row">
+        <span class="text-muted">Создать базу данных автоматически</span>
+        <label class="toggle"><input type="checkbox"><span class="toggle-slider"></span></label>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('modalAddSite')">Отмена</button>
+      <button class="btn btn-primary btn-sm">Создать сайт</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Site -->
+<div class="modal-overlay" id="modalDeleteSite">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-title">Удалить сайт</div><button class="modal-close" onclick="closeModal('modalDeleteSite')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <div class="modal-body">
+      <div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:10px;padding:14px 16px;">
+        <div style="font-size:13px;font-weight:700;color:var(--danger);margin-bottom:6px">⚠ Внимание!</div>
+        <div style="font-size:12px;color:var(--muted);line-height:1.6">Вы удаляете сайт <strong style="color:var(--text)">myproject.dev</strong>. Это действие необратимо.</div>
+      </div>
+      <div class="flex-row">
+        <span class="text-muted">Удалить файлы сайта (/var/www/myproject)</span>
+        <label class="toggle"><input type="checkbox"><span class="toggle-slider"></span></label>
+      </div>
+      <div class="flex-row">
+        <span class="text-muted">Удалить конфиг Nginx</span>
+        <label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+      </div>
+      <div class="form-row"><div class="form-label">Введите домен для подтверждения</div><input type="text" class="form-input" placeholder="myproject.dev"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('modalDeleteSite')">Отмена</button>
+      <button class="btn btn-danger btn-sm">Удалить</button>
+    </div>
+  </div>
+</div>
+
+<!-- SSL Modal -->
+<div class="modal-overlay" id="modalSSL">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-title">SSL-сертификат</div><button class="modal-close" onclick="closeModal('modalSSL')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <div class="modal-body">
+      <div class="form-row"><div class="form-label">Домен</div><input type="text" class="form-input" value="myproject.dev" readonly></div>
+      <div class="form-row">
+        <div class="form-label">Тип</div>
+        <select class="form-input"><option>Let's Encrypt (бесплатный)</option><option>Самоподписанный</option><option>Загрузить свой</option></select>
+      </div>
+      <div class="flex-row">
+        <span class="text-muted">Авто-продление</span>
+        <label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+      </div>
+      <div class="flex-row">
+        <span class="text-muted">Редирект HTTP → HTTPS</span>
+        <label class="toggle"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('modalSSL')">Отмена</button>
+      <button class="btn btn-primary btn-sm">Выпустить</button>
+    </div>
+  </div>
+</div>
+
+<!-- HTTP Auth -->
+<div class="modal-overlay" id="modalHTTPAuth">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-title">HTTP Basic Auth</div><button class="modal-close" onclick="closeModal('modalHTTPAuth')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <div class="modal-body">
+      <div class="flex-row">
+        <span class="text-muted">Включить защиту паролем</span>
+        <label class="toggle"><input type="checkbox" id="httpAuthToggle" onchange="toggleHTTPAuth(this)"><span class="toggle-slider"></span></label>
+      </div>
+      <div id="httpAuthFields" style="display:none;flex-direction:column;gap:12px">
+        <div class="form-row"><div class="form-label">Заголовок (Realm)</div><input type="text" class="form-input" placeholder="Restricted Area" value="Protected Zone"></div>
+        <div class="form-row"><div class="form-label">Логин</div><input type="text" class="form-input" placeholder="admin"></div>
+        <div class="form-row"><div class="form-label">Пароль</div><input type="password" class="form-input" placeholder="••••••••"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('modalHTTPAuth')">Отмена</button>
+      <button class="btn btn-primary btn-sm">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add DB -->
+<div class="modal-overlay" id="modalAddDB">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-title">Создать базу данных</div><button class="modal-close" onclick="closeModal('modalAddDB')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <div class="modal-body">
+      <div class="form-row"><div class="form-label">Название базы</div><input type="text" class="form-input" placeholder="mysite_db"></div>
+      <div class="form-row">
+        <div class="form-label">Кодировка</div>
+        <select class="form-input"><option selected>utf8mb4 (рекомендуется)</option><option>utf8</option><option>latin1</option></select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('modalAddDB')">Отмена</button>
+      <button class="btn btn-primary btn-sm">Создать</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete DB -->
+<div class="modal-overlay" id="modalDeleteDB">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-title">Удалить базу данных</div><button class="modal-close" onclick="closeModal('modalDeleteDB')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <div class="modal-body">
+      <div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:10px;padding:14px 16px;">
+        <div style="font-size:12px;color:var(--muted);line-height:1.6">Вы удаляете базу данных <strong style="color:var(--text)">shop_db</strong>. Все данные будут уничтожены безвозвратно.</div>
+      </div>
+      <div class="form-row"><div class="form-label">Введите название БД для подтверждения</div><input type="text" class="form-input" placeholder="shop_db"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('modalDeleteDB')">Отмена</button>
+      <button class="btn btn-danger btn-sm">Удалить</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add DB User -->
+<div class="modal-overlay" id="modalAddDBUser">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-title">Создать пользователя MySQL</div><button class="modal-close" onclick="closeModal('modalAddDBUser')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <div class="modal-body">
+      <div class="form-row"><div class="form-label">Имя пользователя</div><input type="text" class="form-input" placeholder="mysite_user"></div>
+      <div class="form-row"><div class="form-label">Пароль</div><input type="password" class="form-input" placeholder="••••••••"></div>
+      <div class="form-row">
+        <div class="form-label">Хост</div>
+        <select class="form-input"><option selected>localhost</option><option>%</option><option>127.0.0.1</option></select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('modalAddDBUser')">Отмена</button>
+      <button class="btn btn-primary btn-sm">Создать</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete DB User -->
+<div class="modal-overlay" id="modalDeleteDBUser">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-title">Удалить пользователя MySQL</div><button class="modal-close" onclick="closeModal('modalDeleteDBUser')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <div class="modal-body">
+      <div style="font-size:13px;color:var(--muted)">Удалить пользователя <strong style="color:var(--text)">shop_user</strong>? Все его права будут отозваны.</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('modalDeleteDBUser')">Отмена</button>
+      <button class="btn btn-danger btn-sm">Удалить</button>
+    </div>
+  </div>
+</div>
+
+<!-- Change DB Pass -->
+<div class="modal-overlay" id="modalChangeDBPass">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-title">Сменить пароль MySQL</div><button class="modal-close" onclick="closeModal('modalChangeDBPass')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <div class="modal-body">
+      <div class="form-row"><div class="form-label">Пользователь</div><input type="text" class="form-input" value="shop_user" readonly></div>
+      <div class="form-row"><div class="form-label">Новый пароль</div><input type="password" class="form-input" placeholder="••••••••"></div>
+      <div class="form-row"><div class="form-label">Повторите пароль</div><input type="password" class="form-input" placeholder="••••••••"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('modalChangeDBPass')">Отмена</button>
+      <button class="btn btn-primary btn-sm">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Permissions -->
+<div class="modal-overlay" id="modalEditPerms">
+  <div class="modal" style="width:520px">
+    <div class="modal-head"><div class="modal-title">Права пользователя MySQL</div><button class="modal-close" onclick="closeModal('modalEditPerms')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-label">Пользователь</div>
+        <input type="text" class="form-input" value="myproject_user" readonly>
+      </div>
+      <div class="form-row">
+        <div class="form-label">База данных</div>
+        <select class="form-input"><option>myproject_db</option><option>shop_db</option><option>* (все базы)</option></select>
+      </div>
+      <div class="form-row">
+        <div class="form-label">Права</div>
+        <div style="display:flex;gap:8px;margin-bottom:8px">
+          <button class="btn btn-ghost btn-xs" onclick="checkAllPerms(true)">Все</button>
+          <button class="btn btn-ghost btn-xs" onclick="checkAllPerms(false)">Снять все</button>
+        </div>
+        <div class="checkbox-group" id="permsGroup">
+          <label class="cb-item"><input type="checkbox" checked><label>SELECT</label></label>
+          <label class="cb-item"><input type="checkbox" checked><label>INSERT</label></label>
+          <label class="cb-item"><input type="checkbox"><label>UPDATE</label></label>
+          <label class="cb-item"><input type="checkbox"><label>DELETE</label></label>
+          <label class="cb-item"><input type="checkbox"><label>CREATE</label></label>
+          <label class="cb-item"><input type="checkbox"><label>DROP</label></label>
+          <label class="cb-item"><input type="checkbox"><label>ALTER</label></label>
+          <label class="cb-item"><input type="checkbox"><label>INDEX</label></label>
+          <label class="cb-item"><input type="checkbox"><label>REFERENCES</label></label>
+          <label class="cb-item"><input type="checkbox"><label>CREATE VIEW</label></label>
+          <label class="cb-item"><input type="checkbox"><label>SHOW VIEW</label></label>
+          <label class="cb-item"><input type="checkbox"><label>TRIGGER</label></label>
+          <label class="cb-item"><input type="checkbox"><label>LOCK TABLES</label></label>
+          <label class="cb-item"><input type="checkbox"><label>EXECUTE</label></label>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('modalEditPerms')">Отмена</button>
+      <button class="btn btn-primary btn-sm">Применить права</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add User to DB -->
+<div class="modal-overlay" id="modalAddUserToDB">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-title">Добавить пользователя на базу</div><button class="modal-close" onclick="closeModal('modalAddUserToDB')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <div class="modal-body">
+      <div class="form-row"><div class="form-label">База данных</div><input type="text" class="form-input" value="shop_db" readonly></div>
+      <div class="form-row">
+        <div class="form-label">Пользователь</div>
+        <select class="form-input"><option>shop_user</option><option>myproject_user</option></select>
+      </div>
+      <div class="form-row">
+        <div class="form-label">Уровень прав</div>
+        <select class="form-input" id="quickPermsSelect" onchange="quickPerms(this.value)">
+          <option value="all">Все права (ALL)</option>
+          <option value="rw">Чтение + Запись</option>
+          <option value="r">Только чтение</option>
+          <option value="custom">Выбрать вручную</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('modalAddUserToDB')">Отмена</button>
+      <button class="btn btn-primary btn-sm">Добавить</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add FTP -->
+<div class="modal-overlay" id="modalAddFTP">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-title">Создать FTP пользователя</div><button class="modal-close" onclick="closeModal('modalAddFTP')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <div class="modal-body">
+      <div class="form-row"><div class="form-label">Имя пользователя</div><input type="text" class="form-input" placeholder="ftp_mysite"></div>
+      <div class="form-row"><div class="form-label">Пароль</div><input type="password" class="form-input" placeholder="••••••••"></div>
+      <div class="form-row">
+        <div class="form-label">Привязать к сайту</div>
+        <select class="form-input" id="ftpSiteSelect" onchange="updateFTPPath(this.value)">
+          <option value="">— Указать путь вручную —</option>
+          <option value="/var/www/myproject">myproject.dev</option>
+          <option value="/var/www/shop">shop.example.com</option>
+          <option value="/var/www/staging">staging.myapp.ru</option>
+        </select>
+      </div>
+      <div class="form-row"><div class="form-label">Корневая папка</div><input type="text" class="form-input" id="ftpPathInput" placeholder="/var/www/mysite"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('modalAddFTP')">Отмена</button>
+      <button class="btn btn-primary btn-sm">Создать</button>
+    </div>
+  </div>
+</div>
+
+<!-- Change FTP Pass -->
+<div class="modal-overlay" id="modalChangeFTPPass">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-title">Сменить FTP пароль</div><button class="modal-close" onclick="closeModal('modalChangeFTPPass')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <div class="modal-body">
+      <div class="form-row"><div class="form-label">Пользователь</div><input type="text" class="form-input" value="ftp_shop" readonly></div>
+      <div class="form-row"><div class="form-label">Новый пароль</div><input type="password" class="form-input" placeholder="••••••••"></div>
+      <div class="form-row"><div class="form-label">Повторите пароль</div><input type="password" class="form-input" placeholder="••••••••"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('modalChangeFTPPass')">Отмена</button>
+      <button class="btn btn-primary btn-sm">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit FTP Path -->
+<div class="modal-overlay" id="modalEditFTPPath">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-title">Изменить путь FTP</div><button class="modal-close" onclick="closeModal('modalEditFTPPath')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <div class="modal-body">
+      <div class="form-row"><div class="form-label">Пользователь</div><input type="text" class="form-input" value="ftp_shop" readonly></div>
+      <div class="form-row">
+        <div class="form-label">Привязать к сайту</div>
+        <select class="form-input" onchange="updateFTPPath2(this.value)">
+          <option value="">— Указать путь вручную —</option>
+          <option value="/var/www/myproject">myproject.dev</option>
+          <option value="/var/www/shop" selected>shop.example.com</option>
+          <option value="/var/www/staging">staging.myapp.ru</option>
+        </select>
+      </div>
+      <div class="form-row"><div class="form-label">Корневая папка</div><input type="text" class="form-input" id="ftpPathInput2" value="/var/www/shop"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('modalEditFTPPath')">Отмена</button>
+      <button class="btn btn-primary btn-sm">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete FTP -->
+<div class="modal-overlay" id="modalDeleteFTP">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-title">Удалить FTP пользователя</div><button class="modal-close" onclick="closeModal('modalDeleteFTP')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <div class="modal-body">
+      <div style="font-size:13px;color:var(--muted)">Удалить FTP пользователя <strong style="color:var(--text)">ftp_shop</strong>? Доступ по FTP будет закрыт.</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('modalDeleteFTP')">Отмена</button>
+      <button class="btn btn-danger btn-sm">Удалить</button>
+    </div>
+  </div>
+</div>
+
+<!-- Reboot Modal -->
+<div class="modal-overlay" id="modalReboot">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-title">Перезагрузка сервера</div><button class="modal-close" onclick="closeModal('modalReboot')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <div class="modal-body">
+      <div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);border-radius:10px;padding:14px 16px;">
+        <div style="font-size:13px;font-weight:700;color:var(--danger);margin-bottom:6px">⚠ Подтвердите перезагрузку</div>
+        <div style="font-size:12px;color:var(--muted);line-height:1.6">Сервер будет перезагружен. Все сайты будут недоступны около 30–60 секунд. Панель управления тоже перезапустится.</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('modalReboot')">Отмена</button>
+      <button class="btn btn-danger btn-sm">Перезагрузить сейчас</button>
+    </div>
+  </div>
+</div>
+
+<!-- Reset Password Modal -->
+<div class="modal-overlay" id="modalResetPass">
+  <div class="modal">
+    <div class="modal-head"><div class="modal-title">Сброс пароля</div><button class="modal-close" onclick="closeModal('modalResetPass')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+    <div class="modal-body">
+      <div style="font-size:12px;color:var(--muted);line-height:1.6;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;">
+        Для сброса пароля зайдите на сервер через SSH и выполните:<br><br>
+        <span style="font-family:'JetBrains Mono',monospace;color:var(--accent);font-size:11px">php /opt/adelpanel/cli.php reset-password</span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary btn-sm" onclick="closeModal('modalResetPass')">Понятно</button>
+    </div>
+  </div>
+</div>
+
+
+<script>
+  // ── AUTH ──
+  function doLogin() {
+    const u = document.getElementById('authUser').value;
+    const p = document.getElementById('authPass').value;
+    const err = document.getElementById('authError');
+    if (!u || !p) { err.style.display='block'; err.textContent='Заполните все поля'; return; }
+    // Mock: любой логин/пароль пускает внутрь
+    document.getElementById('authPage').classList.remove('open');
+  }
+  document.getElementById('authPass').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+
+  function showResetModal() {
+    document.getElementById('authPage').style.zIndex = 150;
+    openModal('modalResetPass');
+  }
+
+  function logout() {
+    document.getElementById('authPage').classList.add('open');
+    document.getElementById('authUser').value = '';
+    document.getElementById('authPass').value = '';
+    document.getElementById('authError').style.display = 'none';
+  }
+
+  // ── NAVIGATION ──
+  const pageMeta = {
+    dashboard:  { title: 'Главная',           sub: 'UPTIME: 14д 6ч 42м · NGINX 1.24 · PHP 8.2' },
+    sites:      { title: 'Сайты',             sub: 'Управление доменами и конфигами Nginx' },
+    databases:  { title: 'Базы данных',        sub: 'MySQL / MariaDB' },
+    ftp:        { title: 'FTP',               sub: 'Управление FTP пользователями' },
+    ssl:        { title: 'SSL-сертификаты',   sub: 'Let\'s Encrypt · автопродление' },
+    logs:       { title: 'Логи',              sub: 'Просмотр системных и сайтовых логов' },
+    settings:   { title: 'Настройки',         sub: 'Конфигурация сервера и панели' },
+  };
+
+  function showPage(id, navEl) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById('page-' + id).classList.add('active');
+    if (navEl) navEl.classList.add('active');
+    const m = pageMeta[id] || {};
+    document.getElementById('pageTitle').textContent = m.title || id;
+    document.getElementById('pageSub').textContent = m.sub || '';
+  }
+
+  // ── MODALS ──
+  function openModal(id) {
+    document.getElementById(id).classList.add('open');
+  }
+  function closeModal(id) {
+    document.getElementById(id).classList.remove('open');
+    // reset auth page z-index
+    document.getElementById('authPage').style.zIndex = 200;
+  }
+  document.querySelectorAll('.modal-overlay').forEach(overlay => {
+    overlay.addEventListener('click', e => {
+      if (e.target === overlay) closeModal(overlay.id);
+    });
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      document.querySelectorAll('.modal-overlay.open').forEach(m => closeModal(m.id));
+    }
+  });
+
+  // ── HTTP AUTH TOGGLE ──
+  function toggleHTTPAuth(el) {
+    const fields = document.getElementById('httpAuthFields');
+    fields.style.display = el.checked ? 'flex' : 'none';
+  }
+
+  // ── FTP PATH AUTO-FILL ──
+  function updateFTPPath(val) {
+    document.getElementById('ftpPathInput').value = val;
+  }
+  function updateFTPPath2(val) {
+    document.getElementById('ftpPathInput2').value = val;
+  }
+
+  // ── DB PERMISSIONS ──
+  function checkAllPerms(val) {
+    document.querySelectorAll('#permsGroup input[type=checkbox]').forEach(cb => cb.checked = val);
+  }
+
+  // ── LOG TABS ──
+  const logFiles = {
+    access: '/var/log/nginx/myproject.dev.access.log',
+    error:  '/var/log/nginx/myproject.dev.error.log',
+    php:    '/var/log/php8.2-fpm.log',
+    ftp:    '/var/log/vsftpd.log',
+    server: '/var/log/syslog',
+  };
+  function switchLogTab(el, type) {
+    document.querySelectorAll('.log-tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('logFileName').textContent = logFiles[type] || '';
+  }
+
+  // ── PHP VERSION CHIPS ──
+  document.querySelectorAll('.php-chip').forEach(chip => {
+    chip.addEventListener('click', function() {
+      document.querySelectorAll('.php-chip').forEach(c => c.classList.remove('active'));
+      this.classList.add('active');
+    });
+  });
+</script>
+</body>
+</html>
