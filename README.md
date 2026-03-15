@@ -1,4 +1,3 @@
-# adelpanel
 # AdelPanel Landing Page
 
 Это исходные файлы **официального сайта** проекта AdelPanel — https://adelpanel.net
