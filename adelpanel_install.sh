@@ -121,7 +121,7 @@ BASE_PACKAGES=(
 if [ "$OS_ID" = "ubuntu" ]; then
     BASE_PACKAGES+=(software-properties-common)
 fi
-apt-get install -y -qq "${BASE_PACKAGES[@]}" \\
+apt-get install -y -qq "${BASE_PACKAGES[@]}" \
     || die "Не удалось установить базовые пакеты"
 ok "Базовые пакеты"
 
