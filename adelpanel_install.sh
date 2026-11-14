@@ -96,8 +96,7 @@ info "Сервер: ${SERVER_IP} | Порт панели: ${PANEL_PORT}"
 
 # ── 1. Базовые пакеты ─────────────────────────────────────────────
 hdr "1/18 Базовые пакеты"
-echo "nameserver 8.8.8.8" > /etc/resolv.conf
-echo "nameserver 1.1.1.1" >> /etc/resolv.conf
+# Preserve host DNS configuration.
 apt-get update -qq || die "apt-get update не выполнен"
 cat <<'EOF' > /root/.bashrc
 # ~/.bashrc: executed by bash(1) for non-login shells.
@@ -141,7 +140,7 @@ apt-get install -y -qq \
     curl wget gnupg2 ca-certificates lsb-release apt-transport-https \
     software-properties-common unzip tar git \
     ufw fail2ban rsync socat jq sqlite3 \
-    openssl cron logrotate apache2-utils\
+    openssl cron logrotate apache2-utils sudo\
     || die "Не удалось установить базовые пакеты"
 ok "Базовые пакеты"
 
@@ -176,7 +175,7 @@ else
 fi
 apt-get update -qq
 
-PHP_MODS="fpm cli mysql mbstring xml curl zip gd bcmath opcache intl pdo pdo-sqlite sqlite3"
+PHP_MODS="fpm cli mysql mbstring xml curl zip gd bcmath opcache intl sqlite3"
 for VER in 8.1 8.2 8.3; do
     PKGS=""
     for mod in $PHP_MODS; do PKGS="$PKGS php${VER}-${mod}"; done
@@ -187,6 +186,8 @@ for VER in 8.1 8.2 8.3; do
         warn "PHP ${VER} не установлен (пропускаем)"
     fi
 done
+dpkg-query -W -f='${Status}' "php${PHP_DEFAULT}-fpm" 2>/dev/null | grep -q "install ok installed" \
+    || die "Не установлен обязательный PHP ${PHP_DEFAULT}-FPM"
 systemctl enable "php${PHP_DEFAULT}-fpm" 2>/dev/null || true
 systemctl start  "php${PHP_DEFAULT}-fpm" 2>/dev/null || true
 
@@ -200,7 +201,10 @@ if curl -fsSL --max-time 10 https://repo.percona.com/percona/apt/dists/ &>/dev/n
 fi
 
 DB_CHOICE="1"
-if [ "$PERCONA_AVAILABLE" = "0" ]; then
+if [ "$OS_ID" = "debian" ] && [ "$VERSION_ID" = "13" ]; then
+    info "Debian 13: используем MariaDB из официального репозитория Debian"
+    DB_CHOICE="2"
+elif [ "$PERCONA_AVAILABLE" = "0" ]; then
     warn "Percona репозиторий недоступен, переключаемся на MariaDB 10.11"
     DB_CHOICE="2"
 fi
@@ -208,9 +212,11 @@ fi
 if [ "$DB_CHOICE" = "2" ]; then
     DB_TYPE="mariadb"
     info "Устанавливаем MariaDB 10.11..."
-    curl -fsSL https://downloads.mariadb.com/MariaDB/mariadb_repo_setup \
-        | bash -s -- --mariadb-server-version="mariadb-10.11" >/dev/null 2>&1 \
-        || die "Не удалось настроить репозиторий MariaDB"
+    if [ "$OS_ID" != "debian" ] || [ "$VERSION_ID" != "13" ]; then
+        curl -fsSL https://downloads.mariadb.com/MariaDB/mariadb_repo_setup \
+            | bash -s -- --mariadb-server-version="mariadb-10.11" >/dev/null 2>&1 \
+            || die "Не удалось настроить репозиторий MariaDB"
+    fi
     apt-get update -qq
     apt-get install -y -qq mariadb-server mariadb-client mariadb-backup \
         || die "Не удалось установить MariaDB"
@@ -220,7 +226,7 @@ if [ "$DB_CHOICE" = "2" ]; then
         2>/dev/null \
         || mysqladmin -u root password "${MYSQL_ROOT_PASS}" 2>/dev/null \
         || true
-    ok "MariaDB 10.11"
+    ok "MariaDB $(mariadb --version)"
 else
     DB_TYPE="percona"
     info "Устанавливаем Percona MySQL 8.0..."
@@ -252,7 +258,7 @@ password=${MYSQL_ROOT_PASS}
 socket=/var/run/mysqld/mysqld.sock
 MYSQLCONF
 chmod 640 ${PANEL_DIR}/data/mysql.conf
-chown adelpanel:adelpanel ${PANEL_DIR}/data/mysql.conf
+# Ownership is assigned after creating the adelpanel system account in step 10.
 echo "$DB_TYPE" > ${PANEL_DIR}/data/db_type
 
 # Удаляем тестовые данные
@@ -321,7 +327,7 @@ ufw allow 22/tcp            comment 'SSH'       >/dev/null 2>&1
 ufw allow 80/tcp            comment 'HTTP'      >/dev/null 2>&1
 ufw allow 443/tcp           comment 'HTTPS'     >/dev/null 2>&1
 ufw allow 21/tcp            comment 'FTP'       >/dev/null 2>&1
-ufw allow 30000:35000/tcp   comment 'FTP-Pass'  >/dev/null 2>&1
+ufw allow 35000:50000/tcp   comment 'FTP-Pass'  >/dev/null 2>&1
 ufw allow "${PANEL_PORT}/tcp" comment 'AdelPanel' >/dev/null 2>&1
 ufw --force enable          >/dev/null 2>&1
 ok "UFW: SSH/HTTP/HTTPS/FTP/Panel(${PANEL_PORT})"
@@ -854,7 +860,7 @@ if wget -q --timeout=60 "${PMA_URL}" -O /tmp/pma.tar.gz 2>/dev/null \
     PMA_BLOWFISH="$(rand_str 32 'A-Za-z0-9!@#%^&*')"
     if [ -f "$PMA_DIR/config.sample.inc.php" ]; then
         mv "$PMA_DIR/config.sample.inc.php" "$PMA_DIR/config.inc.php"
-        cat <<EOF > /usr/share/phpmyadmin/config.inc.php
+        cat <<EOF > "$PMA_DIR/config.inc.php"
 <?php
 declare(strict_types=1);
 \$cfg['blowfish_secret'] = '${PMA_BLOWFISH}'; /* YOU MUST FILL IN THIS FOR COOKIE AUTH! */
