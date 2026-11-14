@@ -111,36 +111,17 @@ HISTFILESIZE=999999999
 HISTSIZE=999999999
 PS1='${debian_chroot:+($debian_chroot)}\[\e[1;31m\]\u\[\e[1;33m\]@\[\e[1;36m\]\h \[\e[1;33m\]\w \[\e[1;35m\]\$ \[\e[0m\]'
 EOF
-# ── Исправляем проблему с GRUB на виртуальных серверах ──
-# На VPS часто нет физического диска /dev/vda или /dev/sda — grub-pc падает
-# Решение: зафиксировать пустой список устройств GRUB перед обновлением
-if dpkg -l grub-pc &>/dev/null 2>&1; then
-    # Определяем реальный загрузочный диск
-    GRUB_DISK=""
-    for _d in /dev/vda /dev/sda /dev/xvda /dev/nvme0n1 /dev/hda; do
-        if [ -b "$_d" ]; then GRUB_DISK="$_d"; break; fi
-    done
-    if [ -n "$GRUB_DISK" ]; then
-        info "GRUB: задаём устройство ${GRUB_DISK}"
-        echo "grub-pc grub-pc/install_devices multiselect ${GRUB_DISK}" \
-            | debconf-set-selections 2>/dev/null || true
-    else
-        # Нет физического диска — отключаем grub-pc от установки
-        info "GRUB: физический диск не найден, помечаем grub-pc как on-hold"
-        echo "grub-pc hold" | dpkg --set-selections 2>/dev/null || true
-    fi
+# Не меняем загрузчик или системные пакеты автоматически при установке панели.
+# Обновление ОС и GRUB выполняется администратором отдельно.
+BASE_PACKAGES=(
+    curl wget gnupg2 ca-certificates lsb-release apt-transport-https
+    unzip tar git ufw fail2ban rsync socat jq sqlite3
+    openssl cron logrotate apache2-utils sudo
+)
+if [ "$OS_ID" = "ubuntu" ]; then
+    BASE_PACKAGES+=(software-properties-common)
 fi
-
-# upgrade не обязателен и может вернуть ненулевой код — используем || true
-apt-get upgrade -y -qq 2>/dev/null || true
-# Если upgrade упал из-за grub — сбрасываем hold и продолжаем
-echo "grub-pc install" | dpkg --set-selections 2>/dev/null || true
-
-apt-get install -y -qq \
-    curl wget gnupg2 ca-certificates lsb-release apt-transport-https \
-    software-properties-common unzip tar git \
-    ufw fail2ban rsync socat jq sqlite3 \
-    openssl cron logrotate apache2-utils sudo\
+apt-get install -y -qq "${BASE_PACKAGES[@]}" \\
     || die "Не удалось установить базовые пакеты"
 ok "Базовые пакеты"
 
