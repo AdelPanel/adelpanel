@@ -444,6 +444,19 @@ php_admin_value[display_errors] = Off
 php_admin_value[open_basedir]   = ${PANEL_DIR}:/var/www:/tmp:/opt/backups:/proc:/sys:/etc/nginx:/etc/pure-ftpd:/var/log/nginx:/etc/letsencrypt:/root/.acme.sh:/var/lib/php/sessions
 FPMPOOL
 
+# Debian 13 PHP-FPM service has ProtectSystem=full. sudo inherits its
+# read-only mount namespace, so privileged site scripts cannot write
+# Nginx virtual host configurations without a narrowly scoped exception.
+if [ "$OS_ID" = "debian" ] && [ "$VERSION_ID" = "13" ]; then
+    FPM_DROPIN_DIR="/etc/systemd/system/php${PHP_DEFAULT}-fpm.service.d"
+    mkdir -p "$FPM_DROPIN_DIR"
+    cat > "$FPM_DROPIN_DIR/adelpanel.conf" <<'FPM_SYSTEMD_EOF'
+[Service]
+ReadWritePaths=/etc/nginx/conf.d
+FPM_SYSTEMD_EOF
+    systemctl daemon-reload || die "Не удалось обновить конфигурацию systemd PHP-FPM"
+fi
+
 # Убеждаемся что www-data в группе adelpanel (для сокета)
 usermod -aG adelpanel www-data 2>/dev/null || true
 
